@@ -1,0 +1,41 @@
+Que skills son mas populares en cada industria?
+dentro de la mejor industria es determinante la edad/skills?
+A mas skills mas salario?
+Las empresas mas grandes tienen gente mas joven o al reves en función de la industria?
+En q estado hay mas publicas o privadas y cual de las dos tiene gente con mas skills?
+
+¿Qué factores explican mejor la diferencia salarial?
+¿Hay evidencia de desigualdad por estado, edad, industria?
+¿Qué tecnologías están mejor remuneradas?
+¿Existe brecha entre empresas públicas y privadas?
+
+3. Análisis descriptivo
+a) Por estado
+Salario promedio por estado.
+Mapa de calor geográfico si tienes coordenadas o nombres estandarizados.
+
+b) Por industria
+Salarios promedio por industria.
+¿Qué industrias pagan mejor? ¿Varía según el estado?
+
+c) Por lenguaje de programación
+Si hay múltiples lenguajes por persona: usa str_split() y crea columnas binarias.
+¿Qué lenguajes están más asociados con altos salarios?
+
+d) Por edad
+¿Existe relación entre edad y salario? Curvas no lineales (polinomios, splines).
+¿Aumenta salario con la edad o hay un techo?
+
+e) Pública vs privada
+Comparar distribuciones de salario por tipo de empresa.
+¿Diferencias son significativas? (test t de Welch, U de Mann-Whitney)
+
+Gini / percentiles
+
+¿Cuál es la desigualdad salarial dentro de cada estado o industria?
+
+b) Brechas
+
+Brecha entre empresas públicas y privadas.
+Brecha por lenguaje (top 10 vs resto).
+Brecha generacional (jóvenes vs seniors).
