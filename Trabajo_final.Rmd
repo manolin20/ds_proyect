@@ -1,0 +1,216 @@
+---
+title: "Trabajo Final (Data science)"
+output: html_document
+date: "2025-10-19"
+---
+
+# TRABAJO FINAL (DATA SCIENCE)
+
+## ANÁLISIS DE VISUALIZACIÓN Y MACHINE LEARNING SOBRE EL SALARIO DE ANALISTAS DE DATOS EN E.E.U.U. 
+
+## Introducción
+
+El crecimiento acelerado del sector tecnológico ha impulsado una alta demanda por analistas de datos, convirtiéndolos en piezas clave para la toma de decisiones estratégicas. Al ser futuros miembros de este sector es importante para nosotros el comprender la evolución y los determinantes tras sus salarios para evaluar la competitividad del mercado laboral y orientar nuetro futuro.
+
+## Sobre los datos
+
+El set de datos escogido ha sido obtenido de la plataforma Kaggle, contiene los datos de los salarios publicados por glassdoor.com en el periodo 2017-2018 y esta compuesto de 742 observaciones de distintos puestos de trabajo y 28 variables.
+
+Un reumen de las variables seria el siguiente:
+
+-   **JobTitle (chr):** Titulo del puesto.
+
+-   **SalaryEstimate (chr):** Estimación del salario.
+
+-   **JobDescription (chr):** Descripción del puesto.
+
+-   **Rating (num):** Clasificación del puesto (1-5)
+
+-   **CompanyName (chr):** Nombre de la compañia
+
+-   **Location (chr):** Localización oficina.
+
+-   **Headquarters (chr):** Localización central de la empresa.
+
+-   **Size (chr):** Número de empleados
+
+-   **Founded (int):** Año de la fundación de la empresa
+
+-   **Typeofownership (chr):** Tipo de empresa por propietario.
+
+-   **Industry (chr):** Sector industrial.
+
+-   **Sector (chr):** Sector industrial.
+
+-   **Revenue (chr):** Ingresos de la empresa.
+
+-   **Competitors (chr):** Competidores de la empresa.
+
+-   **hourly (int):** Salario por horas.
+
+-   **employer_provided (int):** Beneficios de empleado.
+
+-   **min_salary (int):** Salario mínimo.
+
+-   **max_salary (int):** Salario máximo.
+
+-   **avg_salary (num):** Salario medio.
+
+-   **company_txt (chr):** Nombre de la compañía.
+
+-   **job_state (chr):** Estado donde se busca el trabajo.
+
+-   **same_state (int):** Binario si el trabajo debe realizarse en el mismo estado
+
+-   **age (int):** Edad del buscador.
+
+-   **python_yn (int):** Binario si el buscador conoce python.
+
+-   **R_yn (int):** Binario si el buscador conoce R.
+
+-   **spark (int):** Binario si el buscador conoce spark.
+
+-   **aws (int):** Binario si el buscador conoce AWS.
+
+-   **excel (int):** Binario si el buscador conoce excel.
+
+## Metodología
+
+Este trabajo pretende realizar unalisis estadistico sobre las distintas caracteristicas de los distintos puestos de trabajo para identificar las mas influyentes sobre el salario de los trabajadores a traves de la creacion de distintos modelos de clasificación.
+
+## Indice
+
+1.  Importacion de librerias y datos
+
+2.  Limpieza de datos
+
+## Importación de librerias y datos
+
+```{r}
+#install.packages("skimr")
+#install.packages(c("DataExplorer","corrplot"))
+
+library(dplyr)
+library(ggplot2)
+library(skimr)
+library(DataExplorer)
+library(corrplot)
+library(viridis)
+library(ggrepel)
+library(tm)
+library(textstem)
+library(pwr)
+library(tidyr)
+library(stringr)
+```
+
+```{r}
+data1<-read.csv('dataset/salary_data_cleaned.csv', 
+                  header = T, sep = ',', stringsAsFactors = F,
+                  check.names = F)
+dim(data1)
+```
+
+### Resumen general del dataset
+
+```{r}
+str(data1)           # Estructura y tipos de datos
+```
+
+```{r}
+summary(data1)       # Resumen estadístico básico
+```
+
+### Limpieza del dataset
+
+```{r}
+#Eliminamos los valores NA introducidos como -1 excepto para Competidosres que asumimos ninguno
+data1$Competitors[data1$Competitors == -1] <- "None"
+data1[data1=='-1'] <- NA
+#Eliminamos edades irreales
+data1$age[data1$age > 85 | data1$age < 18] <- NA
+
+#Para evitar problemas cambiamos los nombres de las variable que contienen un espacio
+names(data1)[names(data1) == "Job Title"] <- "Job_Title"
+names(data1)[names(data1) == "Salary Estimate"] <- "Salary_Estimate"
+names(data1)[names(data1) == "Job Description"] <- "Job_Description"
+names(data1)[names(data1) == "Company Name"] <- "Company_Name"
+names(data1)[names(data1) == "Type of ownership"] <- "Ownership"
+
+#Hay varios puestos que se llaman de distinta forma a pesar de ser el mismo asi que vamos a normalizar estos nombres
+
+data1 <- data1 %>%
+  mutate(
+    Job_Title = if_else(str_detect(tolower(Job_Title), "data scientist"),
+                             "Data scientist",
+                             Job_Title),
+    Job_Title = if_else(str_detect(tolower(Job_Title), "data analyst"),
+                             "Data analyst",
+                             Job_Title)
+    )
+
+```
+
+```{r}
+data1c<-data1%>%drop_na()
+```
+
+### Primera visualización de los datos
+
+Para una primera toma de contacto vamos a visulizar la media, mediana y varianza de los salarios medios de nuestro dataset.
+
+```{r}
+# Calcular la media
+media_sal <- mean(data1c$avg_salary, na.rm = TRUE)
+
+# Calcular la mediana
+mediana_sal <- median(data1c$avg_salary, na.rm = TRUE)
+
+# Calcular la varianza
+varianza_sal <- var(data1c$avg_salary, na.rm = TRUE)
+
+print("Media (1 = 1K)")
+media_sal
+print("Media (1 = 1K)")
+mediana_sal
+print("Varianza (1 = 1K)")
+varianza_sal
+```
+
+```{r}
+ggplot(data1c, aes(y = avg_salary)) +
+  geom_boxplot(fill = "skyblue", color = "darkblue") +
+  labs(title = "Boxplot del salario medio",
+       y = "Salario medio (1 = 1K)") +
+  theme_minimal()
+
+```
+
+Una visulización facil sería como se distribuyen los sueldos en funcion del sector de trabajo.
+
+```{r}
+ggplot(data1c, aes(x = Sector,y = avg_salary)) +
+  geom_boxplot(fill = "skyblue", color = "darkblue") +
+  coord_flip() +
+  labs(title = "Distribución de salario medio por Sector",
+       x = "Sector",
+       y = "Salario medio anual (1 = 1K)") +
+  theme_minimal()+
+  theme(axis.text.y = element_text(size = 10))
+
+```
+
+En este gráfico podemos observar cuales son los sectores en los que mejor se pagan los los analistas de datos, como podemos obsevar los mejor pagados son el sector de las telecomunicaciones seguido de social media e information tecnology. Sin embargo tambien podemos obsevar que hay una gran varianza respecto a la media por lo que necesitamos estudiar mas los datos.
+
+Otro aspecto importante en la distribucion de salarios es la experiencia del trabajador, este dataset no nos da una manera de ver si el puesto implica experiencia asi que vamos a utilizar la edad como referencia.
+
+```{r}
+ggplot(data1c, aes(x = age, y = avg_salary, color = Sector)) +
+  geom_point(size = 2) +
+  labs(title = "Salario promedio por edad y sector",
+       x = "Edad",
+       y = "Salario promedio",
+       color = "Sector") +
+  theme_minimal()
+
+```
