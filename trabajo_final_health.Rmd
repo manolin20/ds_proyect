@@ -2,53 +2,73 @@
 title: "trabajo_final_health"
 output: html_document
 date: "2025-10-22"
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#Trabajo data science
+# Trabajo data science
 
-##Lifestyle and Health Risk Prediction
+# Lifestyle and Health Risk Prediction
 
-##Introducción
+## Introducción
 
-El presente estudio tiene como objetivo analizar la relación entre los hábitos de vida
-y el riesgo de salud de la población adulta.
+El presente estudio tiene como objetivo analizar la relación entre los
+hábitos de vida y el riesgo de salud de la población adulta.
 
-A partir de un conjunto de datos sintético denominado Lifestyle and Health Risk Prediction Dataset, se evaluará cómo factores como la edad, el índice de masa corporal (IMC), el nivel de ejercicio, el consumo de azúcar, el sueño y otros hábitos (como el consumo de tabaco o alcohol) influyen en la probabilidad de presentar un riesgo alto de salud.
+A partir de un conjunto de datos sintético denominado Lifestyle and
+Health Risk Prediction Dataset, se evaluará cómo factores como la edad,
+el índice de masa corporal (IMC), el nivel de ejercicio, el consumo de
+azúcar, el sueño y otros hábitos (como el consumo de tabaco o alcohol)
+influyen en la probabilidad de presentar un riesgo alto de salud.
 
 El análisis permitirá responder preguntas como:
 
-¿Qué factores del estilo de vida están más asociados a un mayor riesgo de salud?
+¿Qué factores del estilo de vida están más asociados a un mayor riesgo
+de salud?
 
-¿Existe una relación entre el nivel de ejercicio físico y el riesgo de enfermedad?
+¿Existe una relación entre el nivel de ejercicio físico y el riesgo de
+enfermedad?
 
-¿El sueño o el IMC pueden considerarse indicadores protectores o de riesgo?
+¿El sueño o el IMC pueden considerarse indicadores protectores o de
+riesgo?
 
-¿Podemos construir un modelo predictivo que clasifique correctamente a los individuos en grupos de riesgo alto o bajo?
+¿Podemos construir un modelo predictivo que clasifique correctamente a
+los individuos en grupos de riesgo alto o bajo?
 
-##Descripción dataset
+## Descripción dataset
 
-El dataset completo contiene n=5000 observaciones y 12 variables relacionadas con
-características demográficas, hábitos de vida y nivel de riesgo de salud. 
+El dataset completo contiene n=5000 observaciones y 12 variables
+relacionadas con características demográficas, hábitos de vida y nivel
+de riesgo de salud.
 
-- **age**: edad del individuo (años). Variable **numérica**.
-- **weight**: peso corporal en kilogramos. Variable **numérica**.
-- **height**: altura en centímetros. Variable **numérica**.
-- **exercise**: nivel de ejercicio físico diario (`none`, `low`, `medium`, `high`). Variable **categórica ordinal**.
-- **sleep**: promedio de horas de sueño por día. Variable **numérica**.
-- **sugar_intake**: nivel de consumo de azúcar (`low`, `medium`, `high`). Variable **categórica ordinal**.
-- **smoking**: hábito de fumar (`yes` / `no`). Variable **categórica binaria**.
-- **alcohol**: consumo habitual de alcohol (`yes` / `no`). Variable **categórica binaria**.
-- **married**: estado civil (`yes` / `no`). Variable **categórica binaria**.
-- **profession**: ocupación principal (`office_worker`, `teacher`, `artist`, `farmer`, `driver`, `engineer`). Variable **categórica nominal**.
-- **bmi**: índice de masa corporal (IMC). Variable **numérica**.
-- **health_risk**: nivel de riesgo de salud (`low`, `high`). Variable **categórica binaria** y **variable objetivo** del estudio.
+-   **age**: edad del individuo (años). Variable **numérica**.
+-   **weight**: peso corporal en kilogramos. Variable **numérica**.
+-   **height**: altura en centímetros. Variable **numérica**.
+-   **exercise**: nivel de ejercicio físico diario (`none`, `low`,
+    `medium`, `high`). Variable **categórica ordinal**.
+-   **sleep**: promedio de horas de sueño por día. Variable
+    **numérica**.
+-   **sugar_intake**: nivel de consumo de azúcar (`low`, `medium`,
+    `high`). Variable **categórica ordinal**.
+-   **smoking**: hábito de fumar (`yes` / `no`). Variable **categórica
+    binaria**.
+-   **alcohol**: consumo habitual de alcohol (`yes` / `no`). Variable
+    **categórica binaria**.
+-   **married**: estado civil (`yes` / `no`). Variable **categórica
+    binaria**.
+-   **profession**: ocupación principal (`office_worker`, `teacher`,
+    `artist`, `farmer`, `driver`, `engineer`). Variable **categórica
+    nominal**.
+-   **bmi**: índice de masa corporal (IMC). Variable **numérica**.
+-   **health_risk**: nivel de riesgo de salud (`low`, `high`). Variable
+    **categórica binaria** y **variable objetivo** del estudio.
 
-
-##Carga de librerías
+## Carga de librerías
 
 ```{r}
 
@@ -65,23 +85,26 @@ if (any(!installed)) {
 lapply(packages, library, character.only = TRUE)
 ```
 
-##Carga de datos
+## Carga de datos
 
 ```{r}
 df <- read.csv("Lifestyle_and_Health_Risk_Prediction_Synthetic_Dataset.csv")
 
 ```
-##Limpieza y exploración
 
-###Conversion a tipos
-Convertimos a numerico las variables que deben ser numéricas y convertimos a factor
-las variables categóricas. En caso de que requieran un orden lógico, se establece. 
+## Limpieza y exploración
+
+### Conversion a tipos: 
+
+Convertimos a numerico las variables que deben ser numéricas y
+convertimos a factor las variables categóricas. En caso de que requieran
+un orden lógico, se establece.
 
 ```{r}
 
 df <- df %>%
   mutate(
-    exercise      = factor(exercise, levels=c("none","low","medium","high"), ordered=TRUE),
+    exercise = factor(exercise, levels=c("none","low","medium","high"), ordered=TRUE),
     sugar_intake  = factor(sugar_intake, levels=c("low","medium","high"), ordered=TRUE),
     smoking       = factor(smoking, levels=c("no","yes")),
     alcohol       = factor(alcohol, levels=c("no","yes")),
@@ -91,22 +114,28 @@ df <- df %>%
   )
 ```
 
-###Estructura
+### Estructura
+
 ```{r}
 str(df)
 
 #n=5000 y 12 features
 
 ```
-###Resumen estadístico
+
+### Resumen estadístico
+
 ```{r}
 summary(df)
 
 ```
 
-###Valores faltantes
-Comprobamos que no hay valores faltantes que suele ocurrir bastante en dataset médicos. 
-Como era de esperarse de un dataset sintético no hay NaN values.
+### Valores faltantes 
+
+Comprobamos que no hay valores faltantes que suele ocurrir bastante en
+dataset médicos. Como era de esperarse de un dataset sintético no hay
+NaN values.
+
 ```{r}
 missing_tbl <- df %>%
   summarise(across(everything(), ~mean(is.na(.))*100)) %>%
@@ -116,10 +145,16 @@ missing_tbl <- df %>%
 #No hay valores faltantes
 ```
 
+## Balanceo variable objetivo health_risk 
 
-###Balanceo variable objetivo health_risk
-Existe un claro desbalanceo entre los que tienen high health_risk y los que tienen low
-health_risk, más high que low. 
+Una vez no hemos asegurado que el dataset esta limpio vamos a hacer un
+analisis visual de nuestros datos, de esta manera podemos ver como
+proceder antes de realizar analisis estadisticos.
+
+Lo primero que hemos hecho es un recuento de las posibilidades que puede
+tener la variable que queremos estudiar. Como podemos ver, existe un
+claro desbalanceo entre los que tienen high health_risk y los que tienen
+low health_risk, más high que low.
 
 ```{r}
 df %>%
@@ -132,19 +167,97 @@ ggplot(df, aes(x=health_risk, fill=health_risk)) +
   theme_minimal() + theme(legend.position="none")
 ```
 
-###Exploracion violin variables interés numéricas
+### Exploracion violin variables interés binarias
 
-A través de los gráficos de violín se observa que las personas clasificadas con high_risk presentan
-valores más elevados de edad, peso e índice corporal, así como menor tiempo promedio de sueño, en
-comparación con el grupo de bajo riesgo. 
-No se aprecia una diferencia relevante en la altura.
-Los factores relacionados con el peso y el sueño pueden tener un papel determinante a la hora
-de clasificar como high_risk o low_risk.
+Las gráficas muestran la **relación entre el nivel de riesgo de salud
+(`health_risk`)** y tres variables categóricas binarias:
 
-Para respaldar estas afirmaciones de forma cuantitativa es necesario realizar los test estadísticos
-correspondientes, como el t-test o wilcoxon test. 
+-    `smoking` → si la persona fuma o no
+
+-    `alcohol` → si consume alcohol o no
+
+-    `married` → si está casada o no
+
+Como podemos observar curiosamente el fumar o el consumir alcohol no
+parecen ser determinantes para el riesgo de salud ya que la mayoria de
+las personas con un riesgo de salud alto estudiadas ni fuman ni beben.
+
+```{r}
+
+# Variables categóricas a comparar
+cat_vars <- c("smoking", "alcohol", "married")
+
+# Convertimos el data frame a formato largo
+df_long_cat <- df %>%
+  pivot_longer(cols = all_of(cat_vars),
+               names_to = "variable",
+               values_to = "respuesta")
+
+# Gráfica de barras agrupadas
+ggplot(df_long_cat, aes(x = health_risk, fill = respuesta)) +
+  geom_bar(position = "dodge") +  # usa "dodge" si quieres conteos absolutos
+  facet_wrap(~ variable, ncol = 1) +
+  scale_fill_manual(values = c("skyblue", "tomato")) +
+  theme_minimal() +
+  labs(
+    title = "Proporciones de Smoking, Alcohol y Married según Health Risk",
+    x = "Nivel de Health Risk",
+    y = "Proporción (%)",
+    fill = "Respuesta"
+  )
+```
+
+***Extra***
+
+*Mientras estudiaba este dataset se me ocurrio que se podia observar por
+diversion si hay relacion entre el fumar o beber con el matrimonio.
+Parece que no hay relacion en este dataset pero hubiese estado
+divertido.*
+
+```{r}
+# Variables categóricas de interés
+cat_vars <- c("smoking", "alcohol")
+
+# Convertimos el df a formato largo
+df_long_married <- df %>%
+  pivot_longer(cols = all_of(cat_vars),
+               names_to = "variable",
+               values_to = "respuesta")
+
+# Gráficas de barras con posición "dodge"
+ggplot(df_long_married, aes(x = married, fill = respuesta)) +
+  geom_bar(position = position_dodge(width = 0.8), color = "white") +
+  facet_wrap(~ variable, ncol = 1) +
+  scale_fill_manual(values = c("skyblue", "tomato")) +
+  theme_minimal() +
+  labs(
+    title = "Relación de Smoking y Alcohol con el Estado Civil (Married)",
+    x = "Estado Civil",
+    y = "Conteo de Personas",
+    fill = "Respuesta"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 0, hjust = 0.5)
+  )
+```
+
+### Exploracion violin variables interés numéricas
+
+A través de los gráficos de violín se observa que las personas
+clasificadas con high_risk presentan valores más elevados de edad, peso
+e índice corporal, así como menor tiempo promedio de sueño, en
+comparación con el grupo de bajo riesgo. No se aprecia una diferencia
+relevante en la altura. Los factores relacionados con el peso y el sueño
+pueden tener un papel determinante a la hora de clasificar como
+high_risk o low_risk.
+
+Para respaldar estas afirmaciones de forma cuantitativa es necesario
+realizar los test estadísticos correspondientes, como el t-test o
+wilcoxon test.
 
 Se pueden apreciar outliers en la variable bmi del grupo low_risk.
+
 ```{r}
 
 num_vars <- c("age","weight","height","sleep","bmi")
@@ -161,21 +274,116 @@ purrr::walk(num_vars, ~{
   )
 })
 ```
-###Exploración t-test variables numéricas
-Dado que tenemos n=5000muestras, en principio no se observan outliers (menos en bmi), podemos aplicar t-test sin problema gracias al TLC. 
-Comparamos las medias de los dos grupos (low_risk y high_risk) en t-test de welch para saber
-si son significativamente distintas y corroborar lo observado en el violin plot.
 
-Podemos determinar que para las variables númericas la media de los grupos es significativamente
-distinta, ya que todos los p-values son menores a 0.05. Sobre todo destacar las variables age,
-weight y bmi al tener un p-value especialmente significativo. 
+### Estudio de la normalidad
 
-Podemos determinar, apoyandonos en el test, los violin plots y las medias que:
-  -La media de edad en el grupo high_risk es superior a la media de edad en el grupo low_risk
-  -La media de peso en el grupo high_risk es superior a la media de peso en el grupo low_risk
-  -La media de altura en el grupo high_risk es inferior a la media de altura en el grupo low_risk
-  -La media de sleep en el grupo high_risk es inferior a la media de sleep en el grupo low_risk
-  -La media de bmi en el grupo high_risk es superior a la media de bmi en el grupo low_risk
+De cara a decidir si procedemos con un t-test o un wilcoxon test es
+preciso determinar si las variable que vamos a estudiar siguen una
+distribucion norma o no, hasta cierto punto esto se puede ver en los
+gráficos anteriores pero mejor vamos a verlo de forma individual.
+
+```{r}
+# Convertimos el df a formato largo (long format)
+df_long <- df %>%
+  pivot_longer(cols = c(age, weight, height, sleep, bmi),
+               names_to = "variable",
+               values_to = "valor")
+
+# Graficamos histogramas con densidad para cada variable
+ggplot(df_long, aes(x = valor)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "skyblue", color = "white") +
+  geom_density(color = "red", size = 1) +
+  facet_wrap(~ variable, scales = "free", ncol = 2) +
+  theme_minimal() +
+  labs(title = "Distribución y normalidad de las variables numéricas",
+       y = "Densidad", x = "Valor")
+
+```
+
+Para determinar de forma definitiva que test realizar procedemos a
+realizar un shafiro test con cada de nuestras variables.
+
+En el test de Shapiro contamos con las siguientes hipótesis.
+
+-   Hipótesis Nula: La distribución es normal
+
+-   Hipótesis Alternativa: La distribución no es normal.
+
+o más formalmente aún:
+
+-   H_0: X∼N(μ,σ\^2)
+
+-   H_1:X≁N(μ,σ\^2)
+
+```{r}
+
+# Lista de variables numéricas
+vars <- c("age", "weight", "height", "sleep", "bmi")
+
+# Resultado almacenado en una tabla
+resultados <- data.frame(
+  variable = character(),
+  p_shapiro = numeric(),
+  normal = logical(),
+  test_realizado = character(),
+  p_value = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Iteramos sobre cada variable
+for (v in vars) {
+  
+  # Test de normalidad (Shapiro-Wilk)
+  shapiro <- shapiro.test(df[[v]])
+  
+  # Determinamos si es normal (p > 0.05)
+  es_normal <- shapiro$p.value > 0.05
+  
+  # Seleccionamos el test según normalidad
+  if (es_normal) {
+    test <- t.test(df[[v]] ~ df$health_risk)
+    tipo_test <- "t-test"
+  } else {
+    test <- wilcox.test(df[[v]] ~ df$health_risk)
+    tipo_test <- "Wilcoxon test"
+  }
+  
+  # Agregamos los resultados
+  resultados <- rbind(resultados, data.frame(
+    variable = v,
+    p_shapiro = shapiro$p.value,
+    normal = es_normal,
+    test_realizado = tipo_test,
+    p_value = test$p.value, 4
+  ))
+}
+
+# Mostramos la tabla final
+print(resultados)
+```
+
+### Exploración t-test variables numéricas 
+
+Dado que tenemos n=5000muestras, en principio no se observan outliers
+(menos en bmi), podemos aplicar t-test sin problema gracias al TLC.
+Comparamos las medias de los dos grupos (low_risk y high_risk) en t-test
+de welch para saber si son significativamente distintas y corroborar lo
+observado en el violin plot.
+
+Podemos determinar que para las variables númericas la media de los
+grupos es significativamente distinta, ya que todos los p-values son
+menores a 0.05. Sobre todo destacar las variables age, weight y bmi al
+tener un p-value especialmente significativo.
+
+Podemos determinar, apoyandonos en el test, los violin plots y las
+medias que: -La media de edad en el grupo high_risk es superior a la
+media de edad en el grupo low_risk -La media de peso en el grupo
+high_risk es superior a la media de peso en el grupo low_risk -La media
+de altura en el grupo high_risk es inferior a la media de altura en el
+grupo low_risk -La media de sleep en el grupo high_risk es inferior a la
+media de sleep en el grupo low_risk -La media de bmi en el grupo
+high_risk es superior a la media de bmi en el grupo low_risk
+
 ```{r}
 # t-test (aprox.) para cada numérica
 tests_num <- lapply(num_vars, function(v){
