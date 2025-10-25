@@ -394,3 +394,138 @@ tests_num <- lapply(num_vars, function(v){
 }) %>% bind_rows()
 tests_num
 ```
+
+###Exploración hipótesis variables categoricas y label health risk
+
+Realizamos un test chi cuadrado para determinar si existe relación entre las 
+variables categoricas y health_risk. Importante destacar que con un chi cuadrado
+no podremos determinar la dirección. 
+
+  -smoking y health_risk: con un p-value 3.941370e-71	, bastante significativo,
+  hay una clara relación entre la variable smoking y health_risk. 
+  
+  -alcohol y health_risk: con un p-value 2.970152e-37, bastante significativo,
+  hay una clara relación entre la variable alcohol y health_risk.
+  
+  -married y health_risk: con un p-value 1.846984e-01, no tenemos suficiente 
+  evidencia para rechazar la hipótesis nula, por tanto, no hay relación.
+  
+  -profession y health_risk: con un p-value 4.880350e-01, no tenemos suficiente
+  evidencia para rechazar la hipótesis nula, por tanto, no hay relación.
+  
+  -exercise y health_risk: con un p-value 2.947792e-63, tenemos suficiente 
+  evidencia para rechazar la hipótesis nula, por tanto, hay relación significativa
+  entre exercise y health_risk. 
+  
+  -sugar_intake y health_risk: con un p-value 3.412121e-27, tenemos suficiente 
+  evidencia para rechazar la hipótesis nula, por tanto, hay relación significativa 
+  entre sugar_intake y health_risk. 
+
+```{r}
+#Chi-cuadrado por variable
+cat_vars <- c("smoking","alcohol","married","profession","exercise","sugar_intake")
+
+chi_tbl <- lapply(cat_vars, function(v){
+  tb <- table(df[[v]], df$health_risk)
+  chi <- suppressWarnings(chisq.test(tb))
+  tibble(var=v, p_value=chi$p.value)
+}) %>% bind_rows()
+
+chi_tbl
+
+# Proporción de "high" por categoría (gráfico)
+plot_prop <- function(var){
+  ggplot(df, aes(x=.data[[var]], fill=health_risk)) +
+    geom_bar(position="fill") +
+    scale_y_continuous(labels=scales::percent) +
+    labs(title=paste("Proporción de 'high' por", var), x=var, y="% dentro de categoría") +
+    theme_minimal()
+}
+purrr::walk(cat_vars, ~print(plot_prop(.x)))
+```
+
+Existe una relacion entre exercise, sugar_intake con health_risk. La cuestión es 
+¿en que dirección? Para ello, vamos a comprobar si a medida que aumentamos el exercise
+o el sugar_intake cambia la probabilidad de high_risk.
+
+Importante utilizar un glm, ya que la variable a predecir health_risk es binomial, 
+puede tomar 0 o 1. Así que usamos el método glm, con la familia binomial, que utiliza
+una función de enlace de log.
+
+El Odds Ratio nos indica en qué medida se multiplican las odds (posibilidades) de tener 
+un riesgo de salud alto (el evento y=1) por cada aumento de una unidad en el predictor 
+(por ejemplo, pasar de nivel "low" a "medium" de ejercicio).
+
+El estimate o ODDS RATIO de exercise es de 0.60, menor que 1. Por tanto, existe una relación
+negativa entre aumentar el ejercicio y ser high_risk. Además, el p-value es significativo, 
+por tanto, se confirma que el odds ratio es distinto de 1, por tanto, hay relación. Y como
+es menor que 1, es negativa. 
+
+El odds ratio de sugar_intake es 1.45, mayor a 1. Por tanto, existe una relación positiva
+entre aumentar el ejercicio y la probabilidad de ser high_risk. El p-value es significativo,
+por tanto, se confirma que el odds ratio es distinto de 1. 
+
+```{r}
+df$y <- ifelse(df$health_risk=="high",1,0)
+df$exercise_num     <- as.numeric(df$exercise)      # none<low<medium<high = 1..4
+df$sugar_intake_num <- as.numeric(df$sugar_intake)  # low<medium<high = 1..3
+
+m_ex  <- glm(y ~ exercise_num, data=df, family=binomial())
+m_sug <- glm(y ~ sugar_intake_num, data=df, family=binomial())
+broom::tidy(m_ex, exponentiate=TRUE, conf.int=TRUE)   # OR por incremento
+broom::tidy(m_sug, exponentiate=TRUE, conf.int=TRUE)
+```
+
+Es interesante comprobar como varía la probabilidad de ser high_risk a medida que aumenta el
+BMI en toda la población. 
+
+Además, se comprobará también por bandas de edad. Utilizaremos la variable age para crear
+bandas de edad y observar como se distribuye la probabilidad de ser high_risk a medida
+que aumentamos el bmi. 
+
+La probabilidad de ser high_risk aumenta con el BMI, pero lo hace de manera más 
+intensa en el rango intermedio de BMI, y la intensidad disminuye en los extremos.
+
+En el análisis de grupos edad podemos observar que la curva es mucho más empinada
+en los grupos de edad jovenes que en los grupos de edad ancianos. Esto tiene sentido, 
+ya que la gente anciana suele tener otros factores que les hacen ser high_risk por tanto,
+aumentar su BMI no implica un cambio tan drástico en su probabilidad de ser high_risk puesto
+que ya sería de por si alta por otros factores relacionados con la edad.
+
+En cambio, con los más jóvenes, que no deberían tener factores que les hagan ser high_risk,
+un pequeño cambio en el bmi aumenta drásticamente la probabilidad de ser high_risk.
+
+```{r}
+df <- df %>%
+  mutate(age_band = cut(age, breaks = c(18,35,50,65,80), right=FALSE))
+
+ggplot(df, aes(bmi, y = as.numeric(health_risk=="high"))) +
+  geom_smooth(method="glm", method.args=list(family="binomial")) +
+  labs(title="Riesgo (prob. high) en función del BMI", y="Probabilidad estimada")
+
+ggplot(df, aes(bmi, as.numeric(health_risk=="high"), color=age_band)) +
+  geom_smooth(method="glm", method.args=list(family="binomial")) +
+  labs(title="Relación BMI–riesgo por bandas de edad", y="Prob. estimada")
+
+```
+
+En esta sección se intenta observar si existe algún patrón entre las variables que 
+permita separar de forma natural los grupos low y high health risk. Para ello utilizamos 
+el método de principal componente analysis y utilizamos los dos primeros componentes, aquellos
+que tienen la mayor varianza. Al desplegarlos uno contra otro PC1 vs PC2 no logramos apreciar ningún
+patrón de separación entre los grupos. 
+Lo único claramente visible es el desbalanceo de clases, al haber muchas más observaciones
+de tipo high_risk que low risk. 
+
+```{r}
+num_df <- df %>% select(age, weight, height, sleep, bmi) %>% scale() %>% as.data.frame()
+pca <- prcomp(num_df, center=TRUE, scale.=TRUE)
+summary(pca)         # Varianza explicada
+#biplot(pca)
+
+# PCA coloreando por health_risk
+pca_df <- as.data.frame(pca$x) %>% bind_cols(health_risk = df$health_risk)
+ggplot(pca_df, aes(PC1, PC2, color=health_risk)) +
+  geom_point(alpha=.4) + theme_minimal() +
+  labs(title="PCA (PC1 vs PC2) coloreado por health_risk")
+```
