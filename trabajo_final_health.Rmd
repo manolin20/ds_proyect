@@ -94,7 +94,7 @@ df <- read.csv("Lifestyle_and_Health_Risk_Prediction_Synthetic_Dataset.csv")
 
 ## Limpieza y exploración
 
-### Conversion a tipos: 
+### Conversion a tipos:
 
 Convertimos a numerico las variables que deben ser numéricas y
 convertimos a factor las variables categóricas. En caso de que requieran
@@ -130,7 +130,7 @@ summary(df)
 
 ```
 
-### Valores faltantes 
+### Valores faltantes
 
 Comprobamos que no hay valores faltantes que suele ocurrir bastante en
 dataset médicos. Como era de esperarse de un dataset sintético no hay
@@ -145,7 +145,7 @@ missing_tbl <- df %>%
 #No hay valores faltantes
 ```
 
-## Balanceo variable objetivo health_risk 
+## Balanceo variable objetivo health_risk
 
 Una vez no hemos asegurado que el dataset esta limpio vamos a hacer un
 analisis visual de nuestros datos, de esta manera podemos ver como
@@ -172,11 +172,11 @@ ggplot(df, aes(x=health_risk, fill=health_risk)) +
 Las gráficas muestran la **relación entre el nivel de riesgo de salud
 (`health_risk`)** y tres variables categóricas binarias:
 
--    `smoking` → si la persona fuma o no
+-   `smoking` → si la persona fuma o no
 
--    `alcohol` → si consume alcohol o no
+-   `alcohol` → si consume alcohol o no
 
--    `married` → si está casada o no
+-   `married` → si está casada o no
 
 Como podemos observar curiosamente el fumar o el consumir alcohol no
 parecen ser determinantes para el riesgo de salud ya que la mayoria de
@@ -362,7 +362,7 @@ for (v in vars) {
 print(resultados)
 ```
 
-### Exploración t-test variables numéricas 
+### Exploración t-test variables numéricas
 
 Dado que tenemos n=5000muestras, en principio no se observan outliers
 (menos en bmi), podemos aplicar t-test sin problema gracias al TLC.
@@ -397,29 +397,33 @@ tests_num
 
 ###Exploración hipótesis variables categoricas y label health risk
 
-Realizamos un test chi cuadrado para determinar si existe relación entre las 
-variables categoricas y health_risk. Importante destacar que con un chi cuadrado
-no podremos determinar la dirección. 
+Realizamos un test chi cuadrado para determinar si existe relación entre
+las variables categoricas y health_risk. Importante destacar que con un
+chi cuadrado no podremos determinar la dirección.
 
-  -smoking y health_risk: con un p-value 3.941370e-71	, bastante significativo,
-  hay una clara relación entre la variable smoking y health_risk. 
-  
-  -alcohol y health_risk: con un p-value 2.970152e-37, bastante significativo,
-  hay una clara relación entre la variable alcohol y health_risk.
-  
-  -married y health_risk: con un p-value 1.846984e-01, no tenemos suficiente 
-  evidencia para rechazar la hipótesis nula, por tanto, no hay relación.
-  
-  -profession y health_risk: con un p-value 4.880350e-01, no tenemos suficiente
-  evidencia para rechazar la hipótesis nula, por tanto, no hay relación.
-  
-  -exercise y health_risk: con un p-value 2.947792e-63, tenemos suficiente 
-  evidencia para rechazar la hipótesis nula, por tanto, hay relación significativa
-  entre exercise y health_risk. 
-  
-  -sugar_intake y health_risk: con un p-value 3.412121e-27, tenemos suficiente 
-  evidencia para rechazar la hipótesis nula, por tanto, hay relación significativa 
-  entre sugar_intake y health_risk. 
+-smoking y health_risk: con un p-value 3.941370e-71 , bastante
+significativo, hay una clara relación entre la variable smoking y
+health_risk.
+
+-alcohol y health_risk: con un p-value 2.970152e-37, bastante
+significativo, hay una clara relación entre la variable alcohol y
+health_risk.
+
+-married y health_risk: con un p-value 1.846984e-01, no tenemos
+suficiente evidencia para rechazar la hipótesis nula, por tanto, no hay
+relación.
+
+-profession y health_risk: con un p-value 4.880350e-01, no tenemos
+suficiente evidencia para rechazar la hipótesis nula, por tanto, no hay
+relación.
+
+-exercise y health_risk: con un p-value 2.947792e-63, tenemos suficiente
+evidencia para rechazar la hipótesis nula, por tanto, hay relación
+significativa entre exercise y health_risk.
+
+-sugar_intake y health_risk: con un p-value 3.412121e-27, tenemos
+suficiente evidencia para rechazar la hipótesis nula, por tanto, hay
+relación significativa entre sugar_intake y health_risk.
 
 ```{r}
 #Chi-cuadrado por variable
@@ -444,26 +448,30 @@ plot_prop <- function(var){
 purrr::walk(cat_vars, ~print(plot_prop(.x)))
 ```
 
-Existe una relacion entre exercise, sugar_intake con health_risk. La cuestión es 
-¿en que dirección? Para ello, vamos a comprobar si a medida que aumentamos el exercise
-o el sugar_intake cambia la probabilidad de high_risk.
+Existe una relacion entre exercise, sugar_intake con health_risk. La
+cuestión es ¿en que dirección? Para ello, vamos a comprobar si a medida
+que aumentamos el exercise o el sugar_intake cambia la probabilidad de
+high_risk.
 
-Importante utilizar un glm, ya que la variable a predecir health_risk es binomial, 
-puede tomar 0 o 1. Así que usamos el método glm, con la familia binomial, que utiliza
-una función de enlace de log.
+Importante utilizar un glm, ya que la variable a predecir health_risk es
+binomial, puede tomar 0 o 1. Así que usamos el método glm, con la
+familia binomial, que utiliza una función de enlace de log.
 
-El Odds Ratio nos indica en qué medida se multiplican las odds (posibilidades) de tener 
-un riesgo de salud alto (el evento y=1) por cada aumento de una unidad en el predictor 
-(por ejemplo, pasar de nivel "low" a "medium" de ejercicio).
+El Odds Ratio nos indica en qué medida se multiplican las odds
+(posibilidades) de tener un riesgo de salud alto (el evento y=1) por
+cada aumento de una unidad en el predictor (por ejemplo, pasar de nivel
+"low" a "medium" de ejercicio).
 
-El estimate o ODDS RATIO de exercise es de 0.60, menor que 1. Por tanto, existe una relación
-negativa entre aumentar el ejercicio y ser high_risk. Además, el p-value es significativo, 
-por tanto, se confirma que el odds ratio es distinto de 1, por tanto, hay relación. Y como
-es menor que 1, es negativa. 
+El estimate o ODDS RATIO de exercise es de 0.60, menor que 1. Por tanto,
+existe una relación negativa entre aumentar el ejercicio y ser
+high_risk. Además, el p-value es significativo, por tanto, se confirma
+que el odds ratio es distinto de 1, por tanto, hay relación. Y como es
+menor que 1, es negativa.
 
-El odds ratio de sugar_intake es 1.45, mayor a 1. Por tanto, existe una relación positiva
-entre aumentar el ejercicio y la probabilidad de ser high_risk. El p-value es significativo,
-por tanto, se confirma que el odds ratio es distinto de 1. 
+El odds ratio de sugar_intake es 1.45, mayor a 1. Por tanto, existe una
+relación positiva entre aumentar el ejercicio y la probabilidad de ser
+high_risk. El p-value es significativo, por tanto, se confirma que el
+odds ratio es distinto de 1.
 
 ```{r}
 df$y <- ifelse(df$health_risk=="high",1,0)
@@ -476,24 +484,28 @@ broom::tidy(m_ex, exponentiate=TRUE, conf.int=TRUE)   # OR por incremento
 broom::tidy(m_sug, exponentiate=TRUE, conf.int=TRUE)
 ```
 
-Es interesante comprobar como varía la probabilidad de ser high_risk a medida que aumenta el
-BMI en toda la población. 
+Es interesante comprobar como varía la probabilidad de ser high_risk a
+medida que aumenta el BMI en toda la población.
 
-Además, se comprobará también por bandas de edad. Utilizaremos la variable age para crear
-bandas de edad y observar como se distribuye la probabilidad de ser high_risk a medida
-que aumentamos el bmi. 
+Además, se comprobará también por bandas de edad. Utilizaremos la
+variable age para crear bandas de edad y observar como se distribuye la
+probabilidad de ser high_risk a medida que aumentamos el bmi.
 
-La probabilidad de ser high_risk aumenta con el BMI, pero lo hace de manera más 
-intensa en el rango intermedio de BMI, y la intensidad disminuye en los extremos.
+La probabilidad de ser high_risk aumenta con el BMI, pero lo hace de
+manera más intensa en el rango intermedio de BMI, y la intensidad
+disminuye en los extremos.
 
-En el análisis de grupos edad podemos observar que la curva es mucho más empinada
-en los grupos de edad jovenes que en los grupos de edad ancianos. Esto tiene sentido, 
-ya que la gente anciana suele tener otros factores que les hacen ser high_risk por tanto,
-aumentar su BMI no implica un cambio tan drástico en su probabilidad de ser high_risk puesto
-que ya sería de por si alta por otros factores relacionados con la edad.
+En el análisis de grupos edad podemos observar que la curva es mucho más
+empinada en los grupos de edad jovenes que en los grupos de edad
+ancianos. Esto tiene sentido, ya que la gente anciana suele tener otros
+factores que les hacen ser high_risk por tanto, aumentar su BMI no
+implica un cambio tan drástico en su probabilidad de ser high_risk
+puesto que ya sería de por si alta por otros factores relacionados con
+la edad.
 
-En cambio, con los más jóvenes, que no deberían tener factores que les hagan ser high_risk,
-un pequeño cambio en el bmi aumenta drásticamente la probabilidad de ser high_risk.
+En cambio, con los más jóvenes, que no deberían tener factores que les
+hagan ser high_risk, un pequeño cambio en el bmi aumenta drásticamente
+la probabilidad de ser high_risk.
 
 ```{r}
 df <- df %>%
@@ -509,13 +521,14 @@ ggplot(df, aes(bmi, as.numeric(health_risk=="high"), color=age_band)) +
 
 ```
 
-En esta sección se intenta observar si existe algún patrón entre las variables que 
-permita separar de forma natural los grupos low y high health risk. Para ello utilizamos 
-el método de principal componente analysis y utilizamos los dos primeros componentes, aquellos
-que tienen la mayor varianza. Al desplegarlos uno contra otro PC1 vs PC2 no logramos apreciar ningún
-patrón de separación entre los grupos. 
-Lo único claramente visible es el desbalanceo de clases, al haber muchas más observaciones
-de tipo high_risk que low risk. 
+En esta sección se intenta observar si existe algún patrón entre las
+variables que permita separar de forma natural los grupos low y high
+health risk. Para ello utilizamos el método de principal componente
+analysis y utilizamos los dos primeros componentes, aquellos que tienen
+la mayor varianza. Al desplegarlos uno contra otro PC1 vs PC2 no
+logramos apreciar ningún patrón de separación entre los grupos. Lo único
+claramente visible es el desbalanceo de clases, al haber muchas más
+observaciones de tipo high_risk que low risk.
 
 ```{r}
 num_df <- df %>% select(age, weight, height, sleep, bmi) %>% scale() %>% as.data.frame()
@@ -528,4 +541,314 @@ pca_df <- as.data.frame(pca$x) %>% bind_cols(health_risk = df$health_risk)
 ggplot(pca_df, aes(PC1, PC2, color=health_risk)) +
   geom_point(alpha=.4) + theme_minimal() +
   labs(title="PCA (PC1 vs PC2) coloreado por health_risk")
+```
+
+```{r}
+# ============================
+# Pipeline completa desde cero
+# ============================
+library(tidyverse)
+library(tidymodels)
+
+set.seed(42)
+df_ML <- df %>%
+  select(-c(age_band,y,sugar_intake,exercise))
+# -----------------------------
+# 1) Datos y objetivo
+#    - Dejamos los niveles como c("low","high")
+#    - "high" será la clase positiva (segundo nivel)
+# -----------------------------
+df_ML <- df_ML %>%
+  mutate(
+    health_risk = factor(health_risk, levels = c("low", "high"))
+  )
+
+# -----------------------------
+# 2) Split 70/30 estratificado
+# -----------------------------
+split_obj <- initial_split(df_ML, prop = 0.7, strata = health_risk)
+train_df  <- training(split_obj)
+test_df   <- testing(split_obj)
+
+# -----------------------------
+# 3) Receta (preprocesamiento)
+#    - char -> factor
+#    - imputación media (num)
+#    - estandarización (num)
+#    - imputación moda (cat)
+#    - one-hot (cat)
+#    - (opcional) remover varianza cero
+# -----------------------------
+rec <- recipe(health_risk ~ ., data = train_df) %>%
+  step_string2factor(all_nominal_predictors()) %>%
+  step_impute_mean(all_numeric_predictors()) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_impute_mode(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors(), one_hot = TRUE) %>%
+  step_zv(all_predictors())
+
+# -----------------------------
+# 4) Modelo: Regresión Logística
+# -----------------------------
+log_mod <- logistic_reg() %>%
+  set_engine("glm") %>%
+  set_mode("classification")
+
+wf <- workflow() %>%
+  add_recipe(rec) %>%
+  add_model(log_mod)
+
+# -----------------------------
+# 5) Entrenamiento
+# -----------------------------
+wf_fit <- workflows::fit(wf, data = train_df)
+
+# -----------------------------
+# 6) Predicciones en test
+#    - .pred_class (clase)
+#    - .pred_high  (prob de clase positiva = "high")
+# -----------------------------
+preds <- predict(wf_fit, new_data = test_df, type = "prob") %>%
+  bind_cols(predict(wf_fit, new_data = test_df, type = "class")) %>%
+  bind_cols(test_df %>% select(health_risk))
+
+# -----------------------------
+# 7) Métricas: Accuracy y AUC
+#    IMPORTANTE: como levels = c("low","high"),
+#    la positiva es el SEGUNDO nivel => event_level = "second"
+# -----------------------------
+metricas <- yardstick::metric_set(accuracy, roc_auc)
+
+res <- metricas(
+  data        = preds,
+  truth       = health_risk,
+  estimate    = .pred_class,  # para accuracy
+  .pred_high,                 # prob de la positiva
+  event_level = "second"
+)
+print(res)
+
+# (Opcional) Matriz de confusión
+cm <- yardstick::conf_mat(preds, truth = health_risk, estimate = .pred_class)
+cm
+
+```
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(ggplot2)
+
+# ===== Curva ROC (azul) =====
+roc_df <- yardstick::roc_curve(
+  data        = preds,
+  truth       = health_risk,
+  .pred_high,
+  event_level = "second"   # "high" es la clase positiva (segundo nivel)
+)
+
+auc_tbl <- yardstick::roc_auc(
+  data        = preds,
+  truth       = health_risk,
+  .pred_high,
+  event_level = "second"
+)
+auc_val <- auc_tbl$.estimate
+
+p_roc <- ggplot(roc_df, aes(x = 1 - specificity, y = sensitivity)) +
+  geom_path(linewidth = 1.1, color = "blue") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_equal() +
+  labs(
+    title = paste0("Curva ROC - Regresión Logística (AUC = ", round(auc_val, 3), ")"),
+    x = "Tasa de falsos positivos (1 - Especificidad)",
+    y = "Tasa de verdaderos positivos (Sensibilidad)"
+  ) +
+  theme_minimal(base_size = 12)
+
+print(p_roc)
+
+# ===== Matriz de confusión (azul = verdadero, rojo = falso) =====
+# Partimos del 'cm' de yardstick::conf_mat(...)
+cm_df <- as.data.frame(cm$table)           # columnas: Prediction, Truth, Freq
+colnames(cm_df) <- c("Prediccion", "Real", "Freq")
+
+cm_df <- cm_df %>%
+  mutate(
+    Correcto = if_else(Prediccion == Real, "Verdadero", "Falso"),
+    alpha_w  = Freq / max(Freq)            # para intensidad del color según frecuencia
+  )
+
+p_cm <- ggplot(cm_df, aes(x = Prediccion, y = Real)) +
+  geom_tile(aes(fill = Correcto, alpha = alpha_w), color = "grey20") +
+  geom_text(aes(label = Freq), size = 5) +
+  scale_fill_manual(values = c("Verdadero" = "blue", "Falso" = "red")) +
+  scale_alpha(range = c(0.3, 1), guide = "none") +
+  coord_equal() +
+  labs(title = "Matriz de Confusión", x = "Predicción", y = "Real") +
+  theme_minimal(base_size = 12)
+
+print(p_cm)
+
+```
+
+```{r}
+# ============================
+# Pipeline Random Forest (ranger)
+# ============================
+library(tidyverse)
+library(tidymodels)
+library(ranger)
+
+set.seed(42)
+
+# 2) Split 70/30 estratificado
+split_obj <- initial_split(df_ML, prop = 0.7, strata = health_risk)
+train_df  <- training(split_obj)
+test_df   <- testing(split_obj)
+
+# 3) Receta (árboles no necesitan escalado ni dummies)
+rec <- recipe(health_risk ~ ., data = train_df) %>%
+  step_string2factor(all_nominal_predictors()) %>%  # char -> factor
+  step_impute_mean(all_numeric_predictors()) %>%    # imputar media (num)
+  step_impute_mode(all_nominal_predictors()) %>%    # imputar moda (cat)
+  step_zv(all_predictors())                         # quitar varianza cero
+
+# 4) Modelo: Random Forest (ranger)
+rf_mod <- rand_forest(
+  trees = 500,      # puedes ajustar
+  mtry  = tune(),   # opcional: tunear mtry
+  min_n = 5         # tamaño mínimo de nodo
+) %>%
+  set_engine("ranger", importance = "impurity") %>%
+  set_mode("classification")
+
+# Si NO quieres tunear nada, usa:
+# rf_mod <- rand_forest(trees = 500, min_n = 5) %>%
+#   set_engine("ranger", importance = "impurity") %>%
+#   set_mode("classification")
+
+wf <- workflow() %>%
+  add_recipe(rec) %>%
+  add_model(rf_mod)
+
+# --- (opción A) Entrenar SIN tuning (si quitaste mtry = tune()) ---
+# wf_fit <- workflows::fit(wf, data = train_df)
+
+# --- (opción B) Con tuning rápido de mtry (recomendado) ---
+set.seed(42)
+folds <- vfold_cv(train_df, v = 5, strata = health_risk)
+
+grid <- grid_regular(
+  finalize(mtry(), train_df %>% select(-health_risk)),
+  levels = 5
+)
+
+tuned <- tune_grid(
+  wf,
+  resamples = folds,
+  grid      = grid,
+  metrics   = metric_set(roc_auc)
+)
+# Ahora (correcto):
+best_params <- select_best(tuned, metric = "roc_auc")
+wf_final <- finalize_workflow(wf, best_params)
+
+wf_fit <- workflows::fit(wf_final, data = train_df)
+
+# 6) Predicciones en test
+preds <- predict(wf_fit, new_data = test_df, type = "prob") %>%
+  bind_cols(predict(wf_fit, new_data = test_df, type = "class")) %>%
+  bind_cols(test_df %>% select(health_risk))
+
+# 7) Métricas
+metricas <- yardstick::metric_set(accuracy, roc_auc)
+res <- metricas(
+  data        = preds,
+  truth       = health_risk,
+  estimate    = .pred_class,  # accuracy
+  .pred_high,                 # prob de "high"
+  event_level = "second"
+)
+print(res)
+
+# Matriz de confusión
+cm <- yardstick::conf_mat(preds, truth = health_risk, estimate = .pred_class)
+cm
+
+# (Opcional) Importancia de variables (si dejaste importance="impurity")
+rf_fit_obj <- extract_fit_parsnip(wf_fit)$fit
+if (!is.null(rf_fit_obj$variable.importance)) {
+  vip <- tibble(
+    feature = names(rf_fit_obj$variable.importance),
+    importance = as.numeric(rf_fit_obj$variable.importance)
+  ) %>% arrange(desc(importance))
+  print(head(vip, 15))
+}
+
+```
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(ggplot2)
+
+# --- 1) Predicciones y matriz de confusión (por si no las tienes aún) ---
+# (Asume que wf_fit es tu workflow ajustado y test_df el conjunto de test)
+preds <- predict(wf_fit, new_data = test_df, type = "prob") %>%
+  bind_cols(predict(wf_fit, new_data = test_df, type = "class")) %>%
+  bind_cols(test_df %>% select(health_risk))
+
+cm <- yardstick::conf_mat(preds, truth = health_risk, estimate = .pred_class)
+
+# --- 2) Curva ROC en azul (clase positiva = "high", niveles = c("low","high")) ---
+roc_df <- yardstick::roc_curve(
+  data        = preds,
+  truth       = health_risk,
+  .pred_high,
+  event_level = "second"   # "high" es el segundo nivel => clase positiva
+)
+
+auc_tbl <- yardstick::roc_auc(
+  data        = preds,
+  truth       = health_risk,
+  .pred_high,
+  event_level = "second"
+)
+auc_val <- auc_tbl$.estimate
+
+p_roc <- ggplot(roc_df, aes(x = 1 - specificity, y = sensitivity)) +
+  geom_path(linewidth = 1.1, color = "blue") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  coord_equal() +
+  labs(
+    title = paste0("Curva ROC - Random Forest (AUC = ", round(auc_val, 3), ")"),
+    x = "Tasa de falsos positivos (1 - Especificidad)",
+    y = "Tasa de verdaderos positivos (Sensibilidad)"
+  ) +
+  theme_minimal(base_size = 12)
+
+print(p_roc)
+
+# --- 3) Matriz de confusión: azul (aciertos) / rojo (errores) ---
+cm_df <- as.data.frame(cm$table)           # columnas: Prediction, Truth, Freq
+colnames(cm_df) <- c("Prediccion", "Real", "Freq")
+
+cm_df <- cm_df %>%
+  mutate(
+    Correcto = if_else(Prediccion == Real, "Verdadero", "Falso"),
+    alpha_w  = Freq / max(Freq)            # intensidad según frecuencia
+  )
+
+p_cm <- ggplot(cm_df, aes(x = Prediccion, y = Real)) +
+  geom_tile(aes(fill = Correcto, alpha = alpha_w), color = "grey20") +
+  geom_text(aes(label = Freq), size = 5) +
+  scale_fill_manual(values = c("Verdadero" = "blue", "Falso" = "red")) +
+  scale_alpha(range = c(0.3, 1), guide = "none") +
+  coord_equal() +
+  labs(title = "Matriz de Confusión", x = "Predicción", y = "Real") +
+  theme_minimal(base_size = 12)
+
+print(p_cm)
+
 ```
