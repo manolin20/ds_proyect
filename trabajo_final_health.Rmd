@@ -1,9 +1,11 @@
 ---
 title: "trabajo_final_health"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 date: "2025-10-22"
-editor_options: 
-  markdown: 
+editor_options:
+  markdown:
     wrap: 72
 ---
 
@@ -15,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Lifestyle and Health Risk Prediction
 
-## Introducción
+## 1. Introducción
 
 El presente estudio tiene como objetivo analizar la relación entre los
 hábitos de vida y el riesgo de salud de la población adulta.
@@ -40,7 +42,7 @@ riesgo?
 ¿Podemos construir un modelo predictivo que clasifique correctamente a
 los individuos en grupos de riesgo alto o bajo?
 
-## Descripción dataset
+### 1.1 Descripción dataset
 
 El dataset completo contiene n=5000 observaciones y 12 variables
 relacionadas con características demográficas, hábitos de vida y nivel
@@ -68,12 +70,15 @@ de riesgo de salud.
 -   **health_risk**: nivel de riesgo de salud (`low`, `high`). Variable
     **categórica binaria** y **variable objetivo** del estudio.
 
-## Carga de librerías
+## 2. Preprocesamiento y limpieza
+### 2.1 Carga de librerías
 
 ```{r}
 
 
-packages <- c("tidyverse", "psych", "GGally", "corrplot", "janitor")
+packages <- c("tidyverse", "psych", "GGally", "corrplot", 
+              "rlang","janitor","tidymodels","workflows","ranger","cli","factoextra")
+
 
 # Instalar las que no estén
 installed <- packages %in% rownames(installed.packages())
@@ -85,16 +90,15 @@ if (any(!installed)) {
 lapply(packages, library, character.only = TRUE)
 ```
 
-## Carga de datos
+### 2.2 Carga de datos
 
 ```{r}
 df <- read.csv("Lifestyle_and_Health_Risk_Prediction_Synthetic_Dataset.csv")
 
 ```
 
-## Limpieza y exploración
 
-### Conversion a tipos:
+### 2.3 Conversión a tipos:
 
 Convertimos a numerico las variables que deben ser numéricas y
 convertimos a factor las variables categóricas. En caso de que requieran
@@ -114,7 +118,7 @@ df <- df %>%
   )
 ```
 
-### Estructura
+### 2.4 Estructura
 
 ```{r}
 str(df)
@@ -123,14 +127,14 @@ str(df)
 
 ```
 
-### Resumen estadístico
+### 2.5 Resumen estadístico
 
 ```{r}
 summary(df)
 
 ```
 
-### Valores faltantes
+### 2.6 Valores faltantes
 
 Comprobamos que no hay valores faltantes que suele ocurrir bastante en
 dataset médicos. Como era de esperarse de un dataset sintético no hay
@@ -145,7 +149,9 @@ missing_tbl <- df %>%
 #No hay valores faltantes
 ```
 
-## Balanceo variable objetivo health_risk
+
+## 3. Análisis exploratorio de los datos (EDA)
+### 3.1 Balanceo variable objetivo health_risk
 
 Una vez no hemos asegurado que el dataset esta limpio vamos a hacer un
 analisis visual de nuestros datos, de esta manera podemos ver como
@@ -167,7 +173,8 @@ ggplot(df, aes(x=health_risk, fill=health_risk)) +
   theme_minimal() + theme(legend.position="none")
 ```
 
-### Exploracion violin variables interés binarias
+
+### 3.2 Exploración violín variables interés binarias
 
 Las gráficas muestran la **relación entre el nivel de riesgo de salud
 (`health_risk`)** y tres variables categóricas binarias:
@@ -242,7 +249,7 @@ ggplot(df_long_married, aes(x = married, fill = respuesta)) +
   )
 ```
 
-### Exploracion violin variables interés numéricas
+### 3.3 Exploración violín variables interés numéricas
 
 A través de los gráficos de violín se observa que las personas
 clasificadas con high_risk presentan valores más elevados de edad, peso
@@ -262,20 +269,42 @@ Se pueden apreciar outliers en la variable bmi del grupo low_risk.
 
 num_vars <- c("age","weight","height","sleep","bmi")
 
-# Box + puntos
-purrr::walk(num_vars, ~{
-  print(
-    ggplot(df, aes(x=health_risk, y=.data[[.x]], fill=health_risk)) +
-      geom_violin(alpha=.25, trim=FALSE) +
-      geom_boxplot(width=.15, outlier.shape = NA) +
-      geom_jitter(width=.12, alpha=.15, size=0.7) +
-      labs(title=paste("Distribución de", .x, "por health_risk"), x=NULL, y=.x) +
-      theme_minimal() + theme(legend.position="none")
+
+df_long_num <- df %>%
+  select(health_risk, all_of(num_vars)) %>%
+  tidyr::pivot_longer(
+    cols = all_of(num_vars),
+    names_to = "variable",
+    values_to = "valor"
   )
-})
+
+ggplot(df_long_num, aes(x = health_risk, y = valor, fill = health_risk)) +
+  # Gráfico de violín
+  geom_violin(alpha = 0.4, trim = FALSE) +
+  # Boxplot
+  geom_boxplot(width = 0.15, outlier.shape = NA) +
+  # Puntos (jitter)
+  geom_jitter(width = 0.1, alpha = 0.05, size = 0.5) +
+  
+
+  facet_wrap(~ variable, scales = "free_y", ncol = 3) +
+  
+  # Ejes y Etiquetas
+  labs(
+    title = "Distribución de Variables Numéricas por Riesgo de Salud",
+    x = "Riesgo de Salud",
+    y = "Valor",
+    fill = "Riesgo"
+  ) +
+  # Estilos
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    legend.position = "none"
+  )
 ```
 
-### Estudio de la normalidad
+### 3.4 Estudio de la normalidad
 
 De cara a decidir si procedemos con un t-test o un wilcoxon test es
 preciso determinar si las variable que vamos a estudiar siguen una
@@ -361,28 +390,30 @@ for (v in vars) {
 # Mostramos la tabla final
 print(resultados)
 ```
+## 4. Análisis inferencial y asociación
+### 4.1 Exploración t-test variables numéricas
 
-### Exploración t-test variables numéricas
+Dada la **gran cantidad de muestras** ($n = 5000$), y a pesar de la presencia de *outliers* (principalmente en la variable *bmi*), podemos aplicar el **Test t de Welch** para comparar las medias. El uso del Test t está justificado por la robustez conferida por el **Teorema del Límite Central (TLC)** con un $n$ tan elevado. Comparamos las medias de los dos grupos (*low\_risk* y *high\_risk*) para determinar si son **significativamente distintas** y corroborar lo observado en el *violin plot*.
 
-Dado que tenemos n=5000muestras, en principio no se observan outliers
-(menos en bmi), podemos aplicar t-test sin problema gracias al TLC.
-Comparamos las medias de los dos grupos (low_risk y high_risk) en t-test
-de welch para saber si son significativamente distintas y corroborar lo
-observado en el violin plot.
+---
 
-Podemos determinar que para las variables númericas la media de los
-grupos es significativamente distinta, ya que todos los p-values son
-menores a 0.05. Sobre todo destacar las variables age, weight y bmi al
-tener un p-value especialmente significativo.
+**Resultados de Significación**
 
-Podemos determinar, apoyandonos en el test, los violin plots y las
-medias que: -La media de edad en el grupo high_risk es superior a la
-media de edad en el grupo low_risk -La media de peso en el grupo
-high_risk es superior a la media de peso en el grupo low_risk -La media
-de altura en el grupo high_risk es inferior a la media de altura en el
-grupo low_risk -La media de sleep en el grupo high_risk es inferior a la
-media de sleep en el grupo low_risk -La media de bmi en el grupo
-high_risk es superior a la media de bmi en el grupo low_risk
+Se pudo determinar que, para todas las variables numéricas analizadas, la media de los grupos es **significativamente distinta**, ya que **todos los p-values obtenidos son inferiores a $0.05$**.
+
+* Es fundamental destacar la **especial significación** de las variables **`age`**, **`weight`** y **`bmi`**, al presentar los *p-values* más bajos.
+
+---
+
+**Dirección de las Diferencias (High\_Risk vs Low\_Risk)**
+
+Apoyándonos en el test, los *violin plots* y las medias, se establecen las siguientes conclusiones direccionales:
+
+* La media de edad en el grupo *high\_risk* **es superior** a la media de edad en el grupo *low\_risk*.
+* La media de peso en el grupo *high\_risk* **es superior** a la media de peso en el grupo *low\_risk*.
+* La media de *bmi* en el grupo *high\_risk* **es superior** a la media de *bmi* en el grupo *low\_risk*.
+* La media de altura en el grupo *high\_risk* **es inferior** a la media de altura en el grupo *low\_risk*.
+* La media de *sleep* en el grupo *high\_risk* **es inferior** a la media de *sleep* en el grupo *low\_risk*.
 
 ```{r}
 # t-test (aprox.) para cada numérica
@@ -395,36 +426,40 @@ tests_num <- lapply(num_vars, function(v){
 tests_num
 ```
 
-###Exploración hipótesis variables categoricas y label health risk
+### 4.2 Exploración hipótesis variables categóricas y label health risk
+#### 4.2.1 Test de asociación
 
-Realizamos un test chi cuadrado para determinar si existe relación entre
-las variables categoricas y health_risk. Importante destacar que con un
-chi cuadrado no podremos determinar la dirección.
+**`Análisis de Relación entre Variables Categóricas (Test $\chi^2$)`**
 
--smoking y health_risk: con un p-value 3.941370e-71 , bastante
-significativo, hay una clara relación entre la variable smoking y
-health_risk.
+Para determinar si existe una **relación significativa** entre las variables categóricas y la variable objetivo **`health_risk`**, realizamos el **Test Chi Cuadrado ($\chi^2$) de Pearson**.
 
--alcohol y health_risk: con un p-value 2.970152e-37, bastante
-significativo, hay una clara relación entre la variable alcohol y
-health_risk.
+Es importante recordar que el Test $\chi^2$ nos indica la existencia de una relación, pero **no determina la dirección o la fuerza** de esta.
 
--married y health_risk: con un p-value 1.846984e-01, no tenemos
-suficiente evidencia para rechazar la hipótesis nula, por tanto, no hay
-relación.
+---
 
--profession y health_risk: con un p-value 4.880350e-01, no tenemos
-suficiente evidencia para rechazar la hipótesis nula, por tanto, no hay
-relación.
+**Resultados y Significancia**
 
--exercise y health_risk: con un p-value 2.947792e-63, tenemos suficiente
-evidencia para rechazar la hipótesis nula, por tanto, hay relación
-significativa entre exercise y health_risk.
+La siguiente tabla resume los hallazgos. Se considera un nivel de significación de $\alpha = 0.05$.
 
--sugar_intake y health_risk: con un p-value 3.412121e-27, tenemos
-suficiente evidencia para rechazar la hipótesis nula, por tanto, hay
-relación significativa entre sugar_intake y health_risk.
+| Variable Categórica | P-Value | Relación con `health_risk` | Conclusión |
+| :--- | :--- | :--- | :--- |
+| **`smoking`** | $3.94 \times 10^{-71}$ | **SÍ** | Relación muy significativa |
+| **`alcohol`** | $2.97 \times 10^{-37}$ | **SÍ** | Relación muy significativa |
+| **`exercise`** | $2.95 \times 10^{-63}$ | **SÍ** | Relación muy significativa |
+| **`sugar_intake`** | $3.41 \times 10^{-27}$ | **SÍ** | Relación significativa |
+| **`married`** | $1.85 \times 10^{-01}$ | **NO** | No hay evidencia de relación ($\text{P-value} > 0.05$) |
+| **`profession`** | $4.88 \times 10^{-01}$ | **NO** | No hay evidencia de relación ($\text{P-value} > 0.05$) |
 
+---
+
+**Interpretación de los Hallazgos**
+
+* **Variables con Relación Significativa (P-value $\ll 0.05$):**
+    Existe una **clara y fuerte relación** entre las siguientes variables y el riesgo de salud, lo que sugiere que su distribución no es independiente: **`smoking`**, **`alcohol`**, **`exercise`** y **`sugar_intake`**.
+
+* **Variables sin Relación (P-value $> 0.05$):**
+    No se encontró **suficiente evidencia** para rechazar la hipótesis nula. Por lo tanto, se concluye que no hay una relación significativa entre **`married`** y **`profession`** con la variable **`health_risk`**.
+    
 ```{r}
 #Chi-cuadrado por variable
 cat_vars <- c("smoking","alcohol","married","profession","exercise","sugar_intake")
@@ -437,41 +472,73 @@ chi_tbl <- lapply(cat_vars, function(v){
 
 chi_tbl
 
-# Proporción de "high" por categoría (gráfico)
-plot_prop <- function(var){
-  ggplot(df, aes(x=.data[[var]], fill=health_risk)) +
-    geom_bar(position="fill") +
-    scale_y_continuous(labels=scales::percent) +
-    labs(title=paste("Proporción de 'high' por", var), x=var, y="% dentro de categoría") +
-    theme_minimal()
-}
-purrr::walk(cat_vars, ~print(plot_prop(.x)))
+df_long_prop <- df %>%
+
+  mutate(across(all_of(cat_vars), as.character)) %>%
+  # *************************************************************************
+  select(health_risk, all_of(cat_vars)) %>%
+  pivot_longer(
+    cols = all_of(cat_vars),
+    names_to = "variable",
+    values_to = "categoria"
+  )
+
+# 2. Crear la figura única con facet_wrap
+ggplot(df_long_prop, aes(x = categoria, fill = health_risk)) +
+  # Usar position="fill" para mostrar la proporción (porcentaje)
+  geom_bar(position = "fill") +
+  
+  # Dividir la gráfica por cada variable categórica
+  facet_wrap(~ variable, scales = "free_x", ncol = 3) + 
+  
+  # Ejes y Etiquetas
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Proporción de Riesgo de Salud por Factor Categórico",
+    x = NULL,
+    y = "Proporción (100%)",
+    fill = "Riesgo"
+  ) +
+  # Estilos para mejor visualización
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
 ```
 
-Existe una relacion entre exercise, sugar_intake con health_risk. La
-cuestión es ¿en que dirección? Para ello, vamos a comprobar si a medida
-que aumentamos el exercise o el sugar_intake cambia la probabilidad de
-high_risk.
 
-Importante utilizar un glm, ya que la variable a predecir health_risk es
-binomial, puede tomar 0 o 1. Así que usamos el método glm, con la
-familia binomial, que utiliza una función de enlace de log.
+#### 4.2.2 Dirección de asociación
 
-El Odds Ratio nos indica en qué medida se multiplican las odds
-(posibilidades) de tener un riesgo de salud alto (el evento y=1) por
-cada aumento de una unidad en el predictor (por ejemplo, pasar de nivel
-"low" a "medium" de ejercicio).
+**Análisis de la Dirección de la Relación (GLM)**
 
-El estimate o ODDS RATIO de exercise es de 0.60, menor que 1. Por tanto,
-existe una relación negativa entre aumentar el ejercicio y ser
-high_risk. Además, el p-value es significativo, por tanto, se confirma
-que el odds ratio es distinto de 1, por tanto, hay relación. Y como es
-menor que 1, es negativa.
+El Test Chi Cuadrado confirmó la existencia de una relación significativa entre las variables **`exercise`** y **`sugar_intake`** con **`health_risk`**. La siguiente cuestión es determinar **la dirección de esta relación**, es decir, cómo el cambio en los predictores afecta la probabilidad de ser *high\_risk*.
 
-El odds ratio de sugar_intake es 1.45, mayor a 1. Por tanto, existe una
-relación positiva entre aumentar el ejercicio y la probabilidad de ser
-high_risk. El p-value es significativo, por tanto, se confirma que el
-odds ratio es distinto de 1.
+**Metodología: Modelo de Regresión Logística (GLM)**
+
+Para analizar esta dirección, utilizamos un **Modelo Lineal Generalizado (GLM)** con la **familia `binomial`** (Regresión Logística). Esta elección es crucial dado que la variable a predecir, **`health_risk`**, es una variable **binomial** (0 o 1).
+
+**Interpretación del Odds Ratio (OR)**
+
+El **Odds Ratio (OR)** (obtenido del `Estimate` del modelo) es la métrica clave. El OR nos indica **en qué medida se multiplican las *odds* (posibilidades) de tener un riesgo de salud alto (el evento $y=1$) por cada aumento de una unidad en el predictor** (por ejemplo, pasar de un nivel de ejercicio a otro).
+
+| Variable | Odds Ratio (OR) | P-Value | Dirección de la Relación |
+| :--- | :--- | :--- | :--- |
+| **`exercise`** | **$0.60$** | Significativo ($\ll 0.05$) | Negativa (OR < 1) |
+| **`sugar_intake`** | **$1.45$** | Significativo ($\ll 0.05$) | Positiva (OR > 1) |
+
+---
+
+**Conclusiones Direccionales**
+
+1.  **Ejercicio (`exercise`):**
+    * **Odds Ratio de $0.60$** (menor que 1).
+    * **Conclusión:** Existe una **relación negativa**. A **mayor nivel de ejercicio**, las *odds* de ser *high\_risk* **disminuyen**. El p-value significativo confirma que el OR es estadísticamente distinto de 1, validando la relación.
+
+2.  **Consumo de Azúcar (`sugar_intake`):**
+    * **Odds Ratio de $1.45$** (mayor que 1).
+    * **Conclusión:** Existe una **relación positiva**. A **mayor consumo de azúcar**, las *odds* de ser *high\_risk* **aumentan**. El p-value es significativo, confirmando que el OR es estadísticamente distinto de 1.
 
 ```{r}
 df$y <- ifelse(df$health_risk=="high",1,0)
@@ -484,28 +551,48 @@ broom::tidy(m_ex, exponentiate=TRUE, conf.int=TRUE)   # OR por incremento
 broom::tidy(m_sug, exponentiate=TRUE, conf.int=TRUE)
 ```
 
-Es interesante comprobar como varía la probabilidad de ser high_risk a
-medida que aumenta el BMI en toda la población.
+### 5. Modelado descriptivo
 
-Además, se comprobará también por bandas de edad. Utilizaremos la
-variable age para crear bandas de edad y observar como se distribuye la
-probabilidad de ser high_risk a medida que aumentamos el bmi.
+**Análisis Avanzado: Estructura de Datos y Tendencias de Riesgo**
 
-La probabilidad de ser high_risk aumenta con el BMI, pero lo hace de
-manera más intensa en el rango intermedio de BMI, y la intensidad
-disminuye en los extremos.
+Esta sección marca un punto de inflexión, pasando **más allá del contraste de hipótesis bivariado** (t-tests y $\chi^2$) para utilizar técnicas de modelado estadístico y reducción de dimensionalidad. El objetivo es describir de forma rigurosa la **estructura subyacente de los datos** y las tendencias de riesgo antes de iniciar el modelado predictivo formal.
 
-En el análisis de grupos edad podemos observar que la curva es mucho más
-empinada en los grupos de edad jovenes que en los grupos de edad
-ancianos. Esto tiene sentido, ya que la gente anciana suele tener otros
-factores que les hacen ser high_risk por tanto, aumentar su BMI no
-implica un cambio tan drástico en su probabilidad de ser high_risk
-puesto que ya sería de por si alta por otros factores relacionados con
-la edad.
+---
 
-En cambio, con los más jóvenes, que no deberían tener factores que les
-hagan ser high_risk, un pequeño cambio en el bmi aumenta drásticamente
-la probabilidad de ser high_risk.
+**Objetivos Centrales de la Sección**
+
+El enfoque de esta etapa es doble:
+
+1.  **Modelado de la Probabilidad de Riesgo (GLM):** Modelar y describir **visualmente** la relación entre las **variables clave** (como BMI, ejercicio, y azúcar) y la **probabilidad de alto riesgo** (*high\_risk*). Esto nos permite entender la **dirección e intensidad** de los efectos.
+2.  **Reducción de Dimensionalidad (PCA):** Identificar y describir los **patrones subyacentes** que explican la mayor parte de la varianza en el conjunto de datos de variables numéricas. Esto ayuda a confirmar si existen factores latentes que agrupan y explican las tendencias de riesgo.
+
+**Relevancia del Enfoque**
+
+Esta aproximación permite una **interpretación más profunda** de los factores de riesgo, sentando una **base descriptiva sólida** para el desarrollo de un modelo predictivo robusto en las secciones posteriores.
+
+#### 5.1 Curvas de probabilidad de riesgo con respecto BMI por edad y bandas edad
+
+Es fundamental comprender cómo varía la probabilidad de ser **`high_risk`** a medida que aumenta el **Índice de Masa Corporal (BMI)**. Este análisis se realiza tanto a nivel de la **población general** como por **bandas de edad** para observar posibles efectos de moderación.
+
+---
+
+ **1. Tendencia General (Toda la Población)**
+
+En el conjunto de la población, la probabilidad de ser *high\_risk* **aumenta con el BMI**. Sin embargo, esta relación no es puramente lineal:
+
+> La probabilidad de ser *high\_risk* aumenta con el BMI, pero lo hace de **manera más intensa en el rango intermedio de BMI**, y la intensidad de este aumento **disminuye en los extremos** (BMI muy bajos o muy altos).
+
+---
+
+ **2. Análisis por Bandas de Edad (Efecto Moderador de la Edad)**
+
+Para un análisis más detallado, se utilizaron bandas de la variable **`age`** para observar cómo se distribuye la probabilidad de *high\_risk* en función del BMI en diferentes grupos etarios.
+
+Se observa una diferencia clave en la **pendiente de la curva de riesgo** entre los grupos:
+
+* **Grupos de Edad Jóvenes:** La curva de riesgo es **mucho más empinada**. Un pequeño cambio en el BMI (ej., un aumento) implica un **cambio drástico** en la probabilidad de ser *high\_risk*. Para este grupo, que por lo general carece de otros factores de riesgo significativos asociados a la edad, el BMI se convierte en un **predictor muy potente**.
+
+* **Grupos de Edad Mayores (Ancianos):** La curva de riesgo es **menos intensa** (menos empinada). Esto tiene sentido porque las personas mayores **suelen presentar otros factores** que ya elevan su riesgo de salud base. Por lo tanto, un aumento adicional en su BMI no implica un cambio tan drástico en la probabilidad de ser *high\_risk*, puesto que su probabilidad ya es alta por otros factores inherentes a la edad.
 
 ```{r}
 df <- df %>%
@@ -521,17 +608,27 @@ ggplot(df, aes(bmi, as.numeric(health_risk=="high"), color=age_band)) +
 
 ```
 
-En esta sección se intenta observar si existe algún patrón entre las
-variables que permita separar de forma natural los grupos low y high
-health risk. Para ello utilizamos el método de principal componente
-analysis y utilizamos los dos primeros componentes, aquellos que tienen
-la mayor varianza. Al desplegarlos uno contra otro PC1 vs PC2 no
-logramos apreciar ningún patrón de separación entre los grupos. Lo único
-claramente visible es el desbalanceo de clases, al haber muchas más
-observaciones de tipo high_risk que low risk.
+
+#### 5.2 Análisis de la Carga de Componentes Principales
+
+Detección de Patrones Subyacentes: Análisis de Componentes Principales (PCA)
+
+El propósito de esta subsección es explorar si existe algún **patrón intrínseco** entre las variables numéricas que permita **separar de forma natural** los grupos de **`low_risk`** y **`high_risk`**.
+
+**Metodología y Resultados**
+
+Para ello, se aplicó el método de **Análisis de Componentes Principales (PCA)**. Se utilizaron los **dos primeros componentes principales (PC1 y PC2)**, ya que son los que capturan la mayor proporción de la varianza del conjunto de datos.
+
+* Al representar gráficamente los datos proyectados (**PC1 vs PC2**), **no se logró apreciar ningún patrón de separación claro** o agrupamiento natural entre los grupos de riesgo. Los puntos de *low\_risk* y *high\_risk* se encuentran mezclados en el espacio bidimensional de los componentes.
+
+* El único aspecto visualmente evidente en el gráfico es el **desbalanceo de clases**, donde se observa una densidad de puntos mucho mayor correspondiente a las observaciones de tipo **`high_risk`** en comparación con **`low_risk`**.
+
+**Conclusión del PCA**
+
+Los resultados del PCA sugieren que las variables numéricas, al ser transformadas a un espacio de menor dimensión, **no son suficientes por sí solas** para definir una frontera lineal que separe la clasificación de riesgo.
 
 ```{r}
-num_df <- df %>% select(age, weight, height, sleep, bmi) %>% scale() %>% as.data.frame()
+num_df <- df %>% select(age, weight, height, sleep, bmi)
 pca <- prcomp(num_df, center=TRUE, scale.=TRUE)
 summary(pca)         # Varianza explicada
 #biplot(pca)
@@ -542,6 +639,170 @@ ggplot(pca_df, aes(PC1, PC2, color=health_risk)) +
   geom_point(alpha=.4) + theme_minimal() +
   labs(title="PCA (PC1 vs PC2) coloreado por health_risk")
 ```
+Además, se procedió a **comprobar los otros componentes principales** (no solo PC1 y PC2) en diferentes combinaciones con la esperanza de identificar alguna estructura que pudiera separar de forma natural los grupos de **`health_risk`**.
+
+A pesar de esta exploración exhaustiva de las dimensiones del PCA, **no se logró apreciar ningún patrón de separación** consistente entre los grupos *low\_risk* y *high\_risk*. Esto refuerza la conclusión de que la varianza en las variables numéricas, tal como se expresa en los componentes principales, no genera una frontera de clasificación simple para el riesgo de salud.
+```{r}
+scores <- as.data.frame(pca$x) |> dplyr::bind_cols(health_risk = df$health_risk)
+
+ggplot(scores, aes(PC1, PC3, color=health_risk)) +
+  geom_point(alpha=.4) + theme_minimal() +
+  labs(title="PCA: PC1 vs PC3")
+
+ggplot(scores, aes(PC2, PC3, color=health_risk)) +
+  geom_point(alpha=.4) + theme_minimal() +
+  labs(title="PCA: PC2 vs PC3")
+```
+
+**Interpretación Visual y Contribución de Variables (PCA)**
+
+Aplicamos una exploración más visual en las componentes principales **PC1 y PC2**, que son las que más varianza aportan, utilizando elipses de confianza y los vectores de contribución. Esto nos permite observar no solo cómo se comporta la separación, sino también **cuánto aporta cada variable original a las nuevas direcciones**.
+
+ **Ejes de Variación (Interpretación de las Componentes)**
+
+* **Componente Principal 1 (PC1):**
+    * PC1 está muy positivamente relacionada con la variable **`bmi`** y medianamente con **`weight`**.
+    * Tiene una relación negativa moderada con **`height`**.
+    * **Conclusión:** La componente PC1 representa la dimensión **Volumen (Peso/IMC) vs. Altura**.
+
+* **Componente Principal 2 (PC2):**
+    * PC2 está muy positivamente relacionada con **`age`** y **`height`**.
+    * Está inversamente relacionada con **`sleep`**.
+    * **Conclusión:** La componente PC2 puede interpretarse como una dimensión de **Edad/Altura vs. Patrones de Sueño**.
+
+---
+
+**Distribución de Grupos en el Espacio de Componentes**
+
+Gracias a esta visualización de los *scores* y las elipses de confianza, se pueden caracterizar las regiones donde se sitúa cada grupo de riesgo:
+
+* **Grupo High\_Risk:**
+    * Los puntos están centrados, pero se **extienden más hacia la derecha y hacia arriba** del gráfico de PC1 vs. PC2.
+    * Esta zona se caracteriza por una combinación de **alto `weight` y `bmi`** (eje positivo de PC1) y **alto `age` y `height`** (eje positivo de PC2).
+
+* **Grupo Low\_Risk:**
+    * Los puntos suelen estar agrupados hacia la **izquierda y en la zona inferior** del gráfico.
+```{r}
+
+
+
+
+fviz_pca_biplot(pca, geom.ind="point", habillage=df$health_risk, addEllipses=TRUE,
+                repel=TRUE, label="var")
+```
+
+**Confirmación de la Asociación: ANOVA de Welch en Componentes Principales**
+
+Dados los hallazgos en la interpretación de las componentes principales, se procedió a realizar un **Test ANOVA de Welch** sobre los *scores* de la Componente Principal 1 (PC1) y la Componente Principal 2 (PC2) con respecto a la variable **`health_risk`** (grupos *low\_risk* y *high\_risk*).
+
+El objetivo es cuantificar si las diferencias observadas en la distribución de los grupos en el espacio de PCA son **estadísticamente significativas**.
+
+**Resultados del Test ANOVA de Welch**
+
+| Componente Principal | P-Value Obtenido | Significación | Conclusión |
+| :--- | :--- | :--- | :--- |
+| **PC1** (Volumen) | $p < 0.05$ (Muy bajo) | **Significativo** | Existe una diferencia claramente significativa entre los niveles de `health_risk`. |
+| **PC2** (Edad/Sueño) | $p < 0.05$ (Muy bajo) | **Altamente Significativo** | Existe una diferencia altamente significativa entre los niveles de `health_risk`. |
+
+**Conclusión del Análisis (PCA + ANOVA)**
+
+Los resultados del ANOVA de Welch **confirman rigurosamente** que el riesgo de salud (`health_risk`) está **fuertemente asociado y es distinguible** en función de las características resumidas por:
+
+* **PC1 (Weight/BMI):** Representa la dimensión de **Volumen**.
+* **PC2 (Age/Sleep):** Representa la dimensión de **Edad y Patrones de Sueño**.
+```{r}
+anova_PC1 <- summary(aov(PC1 ~ health_risk, data=scores,var.equal=FALSE))
+anova_PC2 <- summary(aov(PC2 ~ health_risk, data=scores,var.equal=FALSE))
+anova_PC1; anova_PC2
+```
+
+
+**Contribución de Varianza del PCA (Scree Plot y Varianza Acumulada)**
+
+Para determinar la eficiencia y el número óptimo de componentes, realizamos un **Scree Plot** y analizamos la **Varianza Acumulada** aportada por los nuevos ejes.
+
+**Análisis del Scree Plot (Varianza Individual)**
+
+El Scree Plot nos permite visualizar la **varianza explicada por cada componente individualmente**. Observamos que:
+
+* El **Componente Principal 1 (PC1)** es el que aporta, por un amplio margen, la mayor proporción de varianza.
+* El **Componente Principal 2 (PC2)** contribuye de forma significativa, aunque notablemente menos que el PC1.
+* A partir del tercer componente (PC3) en adelante, la contribución marginal de varianza cae abruptamente, siguiendo el *criterio del codo*. 
+
+---
+
+**Varianza Acumulada**
+
+Al examinar la Varianza Acumulada, podemos determinar la cantidad de información original (varianza total) que se retiene al usar un subconjunto de componentes:
+
+* Los **dos primeros componentes (PC1 y PC2)** explican una **proporción significativa** de la varianza total de los datos numéricos, hasta un 60%. 
+
+Esto justifica la decisión de centrarnos en la interpretación y el análisis de significación de **PC1 y PC2**, ya que son los ejes más informativos para resumir la estructura de los datos.
+
+Por otro lado, el **PC5** no aporta apenas varianza ni un 1% así que sería necesario eliminarlo a la hora
+de realizar cualquier tipo de análisis o test dado que no aporta ninguna información. 
+
+```{r}
+
+# Calcular la varianza explicada por cada componente
+var_exp <- pca$sdev^2 / sum(pca$sdev^2)
+
+# Crear el data frame con la varianza individual y acumulada
+scree_df <- data.frame(
+  PC = seq_along(var_exp), 
+  VarExp = var_exp, 
+  Cum = cumsum(var_exp)
+)
+
+# -----------------------------------------------------
+# Generar el Gráfico Combinado (Scree Plot y Acumulada)
+# -----------------------------------------------------
+
+ggplot(scree_df, aes(x = PC)) +
+  # 1. Barras para la Varianza Explicada Individual (Eje Y Principal)
+  geom_col(aes(y = VarExp), fill = "steelblue", alpha = 0.7) +
+  
+  # 2. Línea y Puntos para la Varianza Acumulada (Eje Y Secundario)
+  geom_line(aes(y = Cum), color = "red", group = 1, size = 1) +
+  geom_point(aes(y = Cum), color = "red", size = 3) +
+  
+  # 3. Etiquetas de texto para el porcentaje acumulado (en la línea roja)
+  geom_text(
+    aes(y = Cum + 0.03, label = scales::percent(Cum, accuracy = 0.1)),
+    color = "red",
+    size = 3
+  ) +
+  
+  # 4. ÚNICA DEFINICIÓN DE LA ESCALA Y (Esto elimina la advertencia)
+  scale_y_continuous(
+    # Configuración del eje Y principal (Barras)
+    name = "Varianza Explicada Individual (%)",
+    labels = scales::percent,
+    limits = c(0, 1),
+    
+    # Configuración del eje Y secundario (Línea)
+    sec.axis = sec_axis(~., name = "Varianza Acumulada (%)", labels = scales::percent)
+  ) +
+  
+  # 5. Títulos y Tema
+  labs(
+    title = "Scree Plot y Varianza Acumulada",
+    x = "Componente Principal"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.title.y.left = element_text(color = "steelblue"), # Título del eje principal
+    axis.title.y.right = element_text(color = "red"),       # Título del eje secundario
+    # Aseguramos que las marcas del eje X sean solo enteros
+    axis.text.x = element_text(angle = 0),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_x_continuous(breaks = 1:nrow(scree_df)) # Ajustar marcas del eje X
+```
+
+
+
+### 6. Modelos de predicción
 
 ```{r}
 # ============================
