@@ -77,8 +77,13 @@ de riesgo de salud.
 ```{r}
 
 
-packages <- c("tidyverse", "psych", "GGally", "corrplot", 
-              "rlang","janitor","tidymodels","workflows","ranger","cli","factoextra")
+packages <- c(
+  "tidyverse", "psych", "GGally", "corrplot", "rlang", "janitor",
+  "tidymodels", "workflows", "ranger",
+  "cli", "factoextra", "FactoMineR", "ggrepel", "scales",
+  "caret"
+)
+
 
 
 # Instalar las que no estén
@@ -1118,6 +1123,7 @@ library(tidymodels)
 library(ggplot2)
 # ===== Matriz de confusión (azul = verdadero, rojo = falso) =====
 # Partimos del 'cm' de yardstick::conf_mat(...)
+cm <- yardstick::conf_mat(preds, truth = health_risk, estimate = .pred_class)
 cm_df <- as.data.frame(cm$table)           # columnas: Prediction, Truth, Freq
 colnames(cm_df) <- c("Prediccion", "Real", "Freq")
 
