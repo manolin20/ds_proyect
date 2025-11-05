@@ -1339,11 +1339,6 @@ library(tidyverse)
 library(tidymodels)
 library(ggplot2)
 
-# --- 1) Predicciones y matriz de confusión (por si no las tienes aún) ---
-# (Asume que wf_fit es tu workflow ajustado y test_df el conjunto de test)
-preds <- predict(wf_fit, new_data = test_df, type = "prob") %>%
-  bind_cols(predict(wf_fit, new_data = test_df, type = "class")) %>%
-  bind_cols(test_df %>% select(health_risk))
 
 cm <- yardstick::conf_mat(preds, truth = health_risk, estimate = .pred_class)
 
@@ -1404,3 +1399,146 @@ p_cm <- ggplot(cm_df, aes(x = Prediccion, y = Real)) +
 print(p_cm)
 
 ```
+#### 6.2.4 Curva Precission-Recall
+
+```{r}
+event_pos <- "second"  # porque levels = c("low","high")
+# Curva Precision–Recall y Average Precision
+pr_df <- pr_curve(preds, truth = health_risk, .pred_high, event_level = event_pos)
+ap <- average_precision(preds, truth = health_risk, .pred_high, event_level = event_pos)
+ap
+
+
+ggplot(pr_df, aes(x = recall, y = precision)) +
+  geom_line(linewidth = 1.2, color = col_curve, lineend = "round") +
+  labs(
+    title = "Precision",
+    x = "Recall",
+    y = "Precision"
+  ) +
+  scale_x_continuous(limits = c(0, 1)) +
+  scale_y_continuous(limits = c(0, 1)) +
+  theme_classic(base_size = 12) +
+  theme(
+    panel.grid = element_blank(),
+    axis.ticks.length = unit(2, "pt"),
+    plot.title = element_text(face = "bold", size = 14)
+  )
+
+```
+####6.2.5 Estabilidad con CV (dispersión)
+
+```{r}
+set.seed(42)
+folds_cv <- vfold_cv(train_df, v = 5, strata = health_risk)
+
+ctrl <- control_resamples(save_pred = TRUE)
+cv_res <- fit_resamples(
+  wf_final,
+  resamples = folds_cv,
+  metrics   = metric_set(roc_auc, accuracy),
+  control   = ctrl
+)
+
+collect_metrics(cv_res)  # medias y errores estándar
+
+# Boxplot simple de las estimaciones por fold
+cv_m <- collect_metrics(cv_res, summarize = FALSE)
+ggplot(cv_m, aes(x = .metric, y = .estimate)) + 
+  geom_boxplot() + 
+  labs(title = "Dispersión CV", x = "Métrica", y = "Estimación") +
+  theme_classic()
+
+```
+#### 6.2.6 Test de fuga de información (permutación de etiquetas)
+
+```{r}
+set.seed(123)
+train_perm <- train_df %>% mutate(health_risk = sample(health_risk))
+
+wf_perm <- workflows::fit(wf_final, data = train_perm)
+
+preds_perm <- predict(wf_perm, new_data = test_df, type = "prob") %>%
+  bind_cols(predict(wf_perm, new_data = test_df, type = "class")) %>%
+  bind_cols(test_df %>% select(health_risk))
+
+metric_set(accuracy, roc_auc)(
+  data        = preds_perm,
+  truth       = health_risk,
+  estimate    = .pred_class,
+  .pred_high,
+  event_level = "second"
+)
+# Esperado sin fuga: AUC ≈ 0.5 y accuracy ≈ prevalencia mayoritaria
+
+```
+Como podemos comprobar el AUC es cercano a 0.5 lo que indica que no hay evidencia de fuga de informacion.
+
+#### 6.2.7 Chequeo de solape Train/Test (IDs o filas idénticas)
+```{r}
+library(digest)
+
+id_col <- NULL  # pon aquí el nombre del ID si existe, p.ej. "id"
+
+if (!is.null(id_col) && id_col %in% names(df_ML)) {
+  inter <- intersect(train_df[[id_col]], test_df[[id_col]])
+  cat("Solapes por ID:", length(inter), "\n")
+} else {
+  pred_cols <- setdiff(names(train_df), "health_risk")
+  make_hash <- function(df) apply(df[, pred_cols, drop = FALSE], 1, digest::digest)
+  h_train <- make_hash(train_df)
+  h_test  <- make_hash(test_df)
+  cat("Filas idénticas train/test:", length(intersect(h_train, h_test)), "\n")
+}
+
+```
+No hay filas identicas que puedan aumentar nuestras metricas de evaluacion artificialmente.
+
+#### 6.2.8 Calibración: Brier score + curva de fiabilidad
+```{r}
+# Brier (menor es mejor)
+library(forcats); library(yardstick); library(dplyr)
+
+preds_fix <- preds %>%
+  mutate(health_risk = fct_relevel(health_risk, "high","low"))  # "high" ahora es 1er nivel
+
+brier_ok <- brier_class(preds_fix, truth = health_risk, .pred_high)  # event_level por defecto ("first")
+brier_ok
+
+
+# Curva de calibración (binning)
+calib_df <- preds %>%
+  transmute(prob = .pred_high, y = as.integer(health_risk == "high")) %>%
+  mutate(bin = cut(prob, breaks = seq(0, 1, by = 0.1), include.lowest = TRUE)) %>%
+  group_by(bin) %>%
+  summarise(
+    pred_mean = mean(prob),
+    obs_rate  = mean(y),
+    n = n(),
+    .groups = "drop"
+  )
+
+ggplot(calib_df, aes(x = pred_mean, y = obs_rate, size = n)) +
+  geom_point() +
+  geom_abline(linetype = "dashed") +
+  coord_equal(xlim = c(0,1), ylim = c(0,1), expand = FALSE) +
+  labs(title = "Curva de calibración", x = "Prob. media predicha", y = "Frecuencia observada") +
+  theme_classic()
+
+```
+
+### 6.3 Conclusion
+
+Conclusión: ¿por qué Random Forest es el mejor modelo aquí?
+
+- Mejor discriminación. En test, RF alcanza ROC AUC ≈ 0.998 frente a 0.947 de la logística. Distingue casi perfectamente entre high y low a lo largo de todos los umbrales.
+
+- Menos errores de clasificación. Accuracy ≈ 0.997 (vs 0.873). Matriz de confusión: TP=1045, TN=450, FP=3, FN=2 sobre 1500 casos. Es decir, solo 5 errores totales, con apenas 2 FN (clave si los falsos negativos son costosos).
+
+- Probabilidades bien calibradas. Brier Score correcto ≈ 0.005 (muy bajo), coherente con la AUC altísima: las probabilidades del RF están cercanas a 0/1 cuando deben.
+
+- Robustez del pipeline. El test de permutación entrega AUC ≈ 0.45 y accuracy ≈ prevalencia → el alto rendimiento real no se debe a fuga de información. Además, el tuning con 5-fold CV para mtry reduce riesgo de sobreajuste y estabiliza el desempeño.
+
+- Capta relaciones que la logística no modela. El RF aprende no linealidades e interacciones sin tener que especificarlas, mientras que la regresión logística lineal en los predictores (sin features ingenierizadas) se queda corta.
+
+- Resumen ejecutivo: Con mejor AUC, mayor accuracy, poquísimos errores (sobre todo FN), probabilidades calibradas y checks de fuga superados, Random Forest es el candidato principal para producción en este problema.
