@@ -923,7 +923,7 @@ ggplot(scree_df, aes(x = PC)) +
     size = 3
   ) +
   
-  # 4. ÚNICA DEFINICIÓN DE LA ESCALA Y (Esto elimina la advertencia)
+  # 4. ÚNICA DEFINICIÓN DE LA ESCALA Y
   scale_y_continuous(
     # Configuración del eje Y principal (Barras)
     name = "Varianza Explicada Individual (%)",
@@ -1542,3 +1542,23 @@ Conclusión: ¿por qué Random Forest es el mejor modelo aquí?
 - Capta relaciones que la logística no modela. El RF aprende no linealidades e interacciones sin tener que especificarlas, mientras que la regresión logística lineal en los predictores (sin features ingenierizadas) se queda corta.
 
 - Resumen ejecutivo: Con mejor AUC, mayor accuracy, poquísimos errores (sobre todo FN), probabilidades calibradas y checks de fuga superados, Random Forest es el candidato principal para producción en este problema.
+
+
+
+## 7. Conclusión final del estudio
+
+
+El estudio realizado sobre el *Lifestyle and Health Risk Prediction Dataset* permitió **comprender de forma integral** cómo los factores de estilo de vida inciden en el riesgo de salud.
+
+A través del **análisis exploratorio, inferencial y de componentes principales** realizado, se observaron patrones específicos que refuerzan la importancia de los hábitos cotidianos sobre la condición general de salud.
+
+En concreto:
+
+* Las variables **ejercicio, consumo de azúcar, BMI y edad** fueron las más influyentes a la hora de distinguir entre los grupos de riesgo.
+* El **ejercicio regular** y un **BMI** dentro de rangos saludables se asociaron con una menor probabilidad de pertenecer al grupo `high_risk`.
+* En contraste, un **mayor consumo de azúcar** y hábitos no saludables (**tabaco, alcohol**) incrementaron de forma significativa dicha probabilidad.
+* El **PCA** confirmó que la mayor parte de la varianza está explicada por dimensiones relacionadas con volumen corporal (peso/BMI) y edad/patrones de sueño, aunque no se detectaron agrupaciones claramente separables en el espacio de los componentes.
+
+A nivel general, el trabajo evidencia que los indicadores de salud pueden modelarse eficazmente mediante técnicas estadísticas y de *machine learning*, y que el estilo de vida tiene un **impacto directo y cuantificable** en el riesgo de salud.
+
+Estos resultados sientan una base sólida para ampliar el estudio con modelos predictivos más avanzados y validación sobre datos reales.
