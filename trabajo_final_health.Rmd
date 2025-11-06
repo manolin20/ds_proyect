@@ -74,14 +74,14 @@ de riesgo de salud.
 
 ### 2.1 Carga de librerías
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 
 
 packages <- c(
   "tidyverse", "psych", "GGally", "corrplot", "rlang", "janitor",
   "tidymodels", "workflows", "ranger",
   "cli", "factoextra", "FactoMineR", "ggrepel", "scales",
-  "caret"
+  "caret","ggplot2","dplyr","forcats"
 )
 
 
@@ -93,7 +93,7 @@ if (any(!installed)) {
 }
 
 # Cargar todas
-lapply(packages, library, character.only = TRUE)
+invisible(lapply(packages, library, character.only = TRUE))
 ```
 
 ### 2.2 Carga de datos
@@ -315,7 +315,7 @@ preciso determinar si las variable que vamos a estudiar siguen una
 distribucion norma o no, hasta cierto punto esto se puede ver en los
 gráficos anteriores pero mejor vamos a verlo de forma individual.
 
-```{r}
+```{r,message=FALSE, warning=FALSE}
 # Convertimos el df a formato largo (long format)
 df_long <- df %>%
   pivot_longer(cols = c(age, weight, height, sleep, bmi),
@@ -728,7 +728,7 @@ transformadas a un espacio de menor dimensión, **no son suficientes por
 sí solas** para definir una frontera lineal que separe la clasificación
 de riesgo.
 
-```{r}
+```{r,message=FALSE, warning=FALSE}
 num_df <- df %>% select(age, weight, height, sleep, bmi)
 pca <- prcomp(num_df, center=TRUE, scale.=TRUE)
 summary(pca)         # Varianza explicada
@@ -928,7 +928,7 @@ ggplot(scree_df, aes(x = PC)) +
     # Configuración del eje Y principal (Barras)
     name = "Varianza Explicada Individual (%)",
     labels = scales::percent,
-    limits = c(0, 1),
+    limits = c(0, 1.05),
     
     # Configuración del eje Y secundario (Línea)
     sec.axis = sec_axis(~., name = "Varianza Acumulada (%)", labels = scales::percent)
@@ -980,8 +980,6 @@ las cuales plamaremos con la curva ROC y la matriz de confusión.
 # ============================
 # Pipeline completa desde cero
 # ============================
-library(tidyverse)
-library(tidymodels)
 
 set.seed(42)
 df_ML <- df %>%
@@ -1120,9 +1118,7 @@ ggplot(roc_df, aes(x = 1 - specificity, y = sensitivity)) +
 #### 6.1.2 Matriz de confusión
 
 ```{r}
-library(tidyverse)
-library(tidymodels)
-library(ggplot2)
+
 # ===== Matriz de confusión (azul = verdadero, rojo = falso) =====
 # Partimos del 'cm' de yardstick::conf_mat(...)
 cm <- yardstick::conf_mat(preds, truth = health_risk, estimate = .pred_class)
@@ -1151,9 +1147,6 @@ print(p_cm)
 #### 6.1.3 Curvas Precision y Recall
 
 ```{r}
-library(dplyr)
-library(ggplot2)
-library(yardstick)
 
 # --- Colores coherentes con la ROC/CM ---
 col_curve <- "#1B9E77"  # línea principal
@@ -1244,9 +1237,7 @@ Como podemos observa, nuestra precision es practicamente del 100% esto normalmen
 # ============================
 # Pipeline Random Forest (ranger)
 # ============================
-library(tidyverse)
-library(tidymodels)
-library(ranger)
+
 
 set.seed(42)
 
@@ -1335,9 +1326,7 @@ if (!is.null(rf_fit_obj$variable.importance)) {
 #### 6.2.2 Curva ROC
 
 ```{r}
-library(tidyverse)
-library(tidymodels)
-library(ggplot2)
+
 
 
 cm <- yardstick::conf_mat(preds, truth = health_risk, estimate = .pred_class)
@@ -1398,7 +1387,8 @@ p_cm <- ggplot(cm_df, aes(x = Prediccion, y = Real)) +
 
 print(p_cm)
 
-```
+``` 
+
 #### 6.2.4 Curva Precission-Recall
 
 ```{r}
@@ -1426,7 +1416,9 @@ ggplot(pr_df, aes(x = recall, y = precision)) +
   )
 
 ```
-####6.2.5 Estabilidad con CV (dispersión)
+
+#### 6.2.5 Estabilidad con CV (dispersión)
+
 
 ```{r}
 set.seed(42)
@@ -1450,6 +1442,7 @@ ggplot(cv_m, aes(x = .metric, y = .estimate)) +
   theme_classic()
 
 ```
+
 #### 6.2.6 Test de fuga de información (permutación de etiquetas)
 
 ```{r}
@@ -1497,7 +1490,7 @@ No hay filas identicas que puedan aumentar nuestras metricas de evaluacion artif
 #### 6.2.8 Calibración: Brier score + curva de fiabilidad
 ```{r}
 # Brier (menor es mejor)
-library(forcats); library(yardstick); library(dplyr)
+
 
 preds_fix <- preds %>%
   mutate(health_risk = fct_relevel(health_risk, "high","low"))  # "high" ahora es 1er nivel
@@ -1521,7 +1514,7 @@ calib_df <- preds %>%
 ggplot(calib_df, aes(x = pred_mean, y = obs_rate, size = n)) +
   geom_point() +
   geom_abline(linetype = "dashed") +
-  coord_equal(xlim = c(0,1), ylim = c(0,1), expand = FALSE) +
+  coord_equal(xlim = c(0,1), ylim = c(0,1), expand = TRUE) +
   labs(title = "Curva de calibración", x = "Prob. media predicha", y = "Frecuencia observada") +
   theme_classic()
 
