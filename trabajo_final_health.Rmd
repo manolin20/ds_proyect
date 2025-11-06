@@ -15,6 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Trabajo data science
 
+**Autores**
+
+Andrés Rodriguez de Ledesma Sánchez
+
 # Lifestyle and Health Risk Prediction
 
 ## 1. Introducción
@@ -470,7 +474,7 @@ La siguiente tabla resume los hallazgos. Se considera un nivel de
 significación de $\alpha = 0.05$.
 
 | Variable Categórica | P-Value | Relación con `health_risk` | Conclusión |
-|:-----------------|:-----------------|:-----------------|:-----------------|
+|:---|:---|:---|:---|
 | **`smoking`** | $3.94 \times 10^{-71}$ | **SÍ** | Relación muy significativa |
 | **`alcohol`** | $2.97 \times 10^{-37}$ | **SÍ** | Relación muy significativa |
 | **`exercise`** | $2.95 \times 10^{-63}$ | **SÍ** | Relación muy significativa |
@@ -567,7 +571,7 @@ $y=1$) por cada aumento de una unidad en el predictor (por ejemplo,
 pasar de un nivel de ejercicio a otro).
 
 | Variable | Odds Ratio (OR) | P-Value | Dirección de la Relación |
-|:-----------------|:-----------------|:-----------------|:-----------------|
+|:---|:---|:---|:---|
 | **`exercise`** | $0.60$ | Significativo ($\ll 0.05$) | Negativa (OR \< 1) |
 | **`sugar_intake`** | $1.45$ | Significativo ($\ll 0.05$) | Positiva (OR \> 1) |
 
@@ -833,7 +837,7 @@ significativas**.
 **Resultados del Test ANOVA de Welch**
 
 | Componente Principal | P-Value Obtenido | Significación | Conclusión |
-|:-----------------|:-----------------|:-----------------|:-----------------|
+|:---|:---|:---|:---|
 | **PC1** (Volumen) | $p < 0.05$ (Muy bajo) | **Significativo** | Existe una diferencia claramente significativa entre los niveles de `health_risk`. |
 | **PC2** (Edad/Sueño) | $p < 0.05$ (Muy bajo) | **Altamente Significativo** | Existe una diferencia altamente significativa entre los niveles de `health_risk`. |
 
@@ -1232,7 +1236,10 @@ parametros:
     cuales quedan plasmadas en la curva ROC y la matriz de confusion.
 -   Tambien se muestran el ranking de variables mas influyentes
 
-Como podemos observa, nuestra precision es practicamente del 100% esto normalmente indicaria overfitting pero en este caso es debido a la naturaleza de nuestro dataset.
+Como podemos observa, nuestra precision es practicamente del 100% esto
+normalmente indicaria overfitting pero en este caso es debido a la
+naturaleza de nuestro dataset.
+
 ```{r}
 # ============================
 # Pipeline Random Forest (ranger)
@@ -1387,7 +1394,7 @@ p_cm <- ggplot(cm_df, aes(x = Prediccion, y = Real)) +
 
 print(p_cm)
 
-``` 
+```
 
 #### 6.2.4 Curva Precission-Recall
 
@@ -1418,7 +1425,6 @@ ggplot(pr_df, aes(x = recall, y = precision)) +
 ```
 
 #### 6.2.5 Estabilidad con CV (dispersión)
-
 
 ```{r}
 set.seed(42)
@@ -1465,9 +1471,12 @@ metric_set(accuracy, roc_auc)(
 # Esperado sin fuga: AUC ≈ 0.5 y accuracy ≈ prevalencia mayoritaria
 
 ```
-Como podemos comprobar el AUC es cercano a 0.5 lo que indica que no hay evidencia de fuga de informacion.
+
+Como podemos comprobar el AUC es cercano a 0.5 lo que indica que no hay
+evidencia de fuga de informacion.
 
 #### 6.2.7 Chequeo de solape Train/Test (IDs o filas idénticas)
+
 ```{r}
 library(digest)
 
@@ -1485,9 +1494,12 @@ if (!is.null(id_col) && id_col %in% names(df_ML)) {
 }
 
 ```
-No hay filas identicas que puedan aumentar nuestras metricas de evaluacion artificialmente.
+
+No hay filas identicas que puedan aumentar nuestras metricas de
+evaluacion artificialmente.
 
 #### 6.2.8 Calibración: Brier score + curva de fiabilidad
+
 ```{r}
 # Brier (menor es mejor)
 
@@ -1524,34 +1536,65 @@ ggplot(calib_df, aes(x = pred_mean, y = obs_rate, size = n)) +
 
 Conclusión: ¿por qué Random Forest es el mejor modelo aquí?
 
-- Mejor discriminación. En test, RF alcanza ROC AUC ≈ 0.998 frente a 0.947 de la logística. Distingue casi perfectamente entre high y low a lo largo de todos los umbrales.
+-   Mejor discriminación. En test, RF alcanza ROC AUC ≈ 0.998 frente a
+    0.947 de la logística. Distingue casi perfectamente entre high y low
+    a lo largo de todos los umbrales.
 
-- Menos errores de clasificación. Accuracy ≈ 0.997 (vs 0.873). Matriz de confusión: TP=1045, TN=450, FP=3, FN=2 sobre 1500 casos. Es decir, solo 5 errores totales, con apenas 2 FN (clave si los falsos negativos son costosos).
+-   Menos errores de clasificación. Accuracy ≈ 0.997 (vs 0.873). Matriz
+    de confusión: TP=1045, TN=450, FP=3, FN=2 sobre 1500 casos. Es
+    decir, solo 5 errores totales, con apenas 2 FN (clave si los falsos
+    negativos son costosos).
 
-- Probabilidades bien calibradas. Brier Score correcto ≈ 0.005 (muy bajo), coherente con la AUC altísima: las probabilidades del RF están cercanas a 0/1 cuando deben.
+-   Probabilidades bien calibradas. Brier Score correcto ≈ 0.005 (muy
+    bajo), coherente con la AUC altísima: las probabilidades del RF
+    están cercanas a 0/1 cuando deben.
 
-- Robustez del pipeline. El test de permutación entrega AUC ≈ 0.45 y accuracy ≈ prevalencia → el alto rendimiento real no se debe a fuga de información. Además, el tuning con 5-fold CV para mtry reduce riesgo de sobreajuste y estabiliza el desempeño.
+-   Robustez del pipeline. El test de permutación entrega AUC ≈ 0.45 y
+    accuracy ≈ prevalencia → el alto rendimiento real no se debe a fuga
+    de información. Además, el tuning con 5-fold CV para mtry reduce
+    riesgo de sobreajuste y estabiliza el desempeño.
 
-- Capta relaciones que la logística no modela. El RF aprende no linealidades e interacciones sin tener que especificarlas, mientras que la regresión logística lineal en los predictores (sin features ingenierizadas) se queda corta.
+-   Capta relaciones que la logística no modela. El RF aprende no
+    linealidades e interacciones sin tener que especificarlas, mientras
+    que la regresión logística lineal en los predictores (sin features
+    ingenierizadas) se queda corta.
 
-- Resumen ejecutivo: Con mejor AUC, mayor accuracy, poquísimos errores (sobre todo FN), probabilidades calibradas y checks de fuga superados, Random Forest es el candidato principal para producción en este problema.
-
-
+-   Resumen ejecutivo: Con mejor AUC, mayor accuracy, poquísimos errores
+    (sobre todo FN), probabilidades calibradas y checks de fuga
+    superados, Random Forest es el candidato principal para producción
+    en este problema.
 
 ## 7. Conclusión final del estudio
 
+El estudio realizado sobre el *Lifestyle and Health Risk Prediction
+Dataset* permitió **comprender de forma integral** cómo los factores de
+estilo de vida inciden en el riesgo de salud.
 
-El estudio realizado sobre el *Lifestyle and Health Risk Prediction Dataset* permitió **comprender de forma integral** cómo los factores de estilo de vida inciden en el riesgo de salud.
-
-A través del **análisis exploratorio, inferencial y de componentes principales** realizado, se observaron patrones específicos que refuerzan la importancia de los hábitos cotidianos sobre la condición general de salud.
+A través del **análisis exploratorio, inferencial y de componentes
+principales** realizado, se observaron patrones específicos que
+refuerzan la importancia de los hábitos cotidianos sobre la condición
+general de salud.
 
 En concreto:
 
-* Las variables **ejercicio, consumo de azúcar, BMI y edad** fueron las más influyentes a la hora de distinguir entre los grupos de riesgo.
-* El **ejercicio regular** y un **BMI** dentro de rangos saludables se asociaron con una menor probabilidad de pertenecer al grupo `high_risk`.
-* En contraste, un **mayor consumo de azúcar** y hábitos no saludables (**tabaco, alcohol**) incrementaron de forma significativa dicha probabilidad.
-* El **PCA** confirmó que la mayor parte de la varianza está explicada por dimensiones relacionadas con volumen corporal (peso/BMI) y edad/patrones de sueño, aunque no se detectaron agrupaciones claramente separables en el espacio de los componentes.
+-   Las variables **ejercicio, consumo de azúcar, BMI y edad** fueron
+    las más influyentes a la hora de distinguir entre los grupos de
+    riesgo.
+-   El **ejercicio regular** y un **BMI** dentro de rangos saludables se
+    asociaron con una menor probabilidad de pertenecer al grupo
+    `high_risk`.
+-   En contraste, un **mayor consumo de azúcar** y hábitos no saludables
+    (**tabaco, alcohol**) incrementaron de forma significativa dicha
+    probabilidad.
+-   El **PCA** confirmó que la mayor parte de la varianza está explicada
+    por dimensiones relacionadas con volumen corporal (peso/BMI) y
+    edad/patrones de sueño, aunque no se detectaron agrupaciones
+    claramente separables en el espacio de los componentes.
 
-A nivel general, el trabajo evidencia que los indicadores de salud pueden modelarse eficazmente mediante técnicas estadísticas y de *machine learning*, y que el estilo de vida tiene un **impacto directo y cuantificable** en el riesgo de salud.
+A nivel general, el trabajo evidencia que los indicadores de salud
+pueden modelarse eficazmente mediante técnicas estadísticas y de
+*machine learning*, y que el estilo de vida tiene un **impacto directo y
+cuantificable** en el riesgo de salud.
 
-Estos resultados sientan una base sólida para ampliar el estudio con modelos predictivos más avanzados y validación sobre datos reales.
+Estos resultados sientan una base sólida para ampliar el estudio con
+modelos predictivos más avanzados y validación sobre datos reales.
